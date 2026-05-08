@@ -25,7 +25,7 @@ require_once __DIR__ . '/src/controllers/LlamasController.php';
 require_once __DIR__ . '/src/controllers/HiloController.php';
 require_once __DIR__ . '/src/controllers/ArenaController.php';
 
-use BF\Response;
+use BF\{Response, Database};
 use BF\Controllers\{AuthController, RoomsController, GameController,
                     LlamasController, HiloController, ArenaController};
 
@@ -59,6 +59,25 @@ $s1 = $segs[1] ?? '';
 $s2 = $segs[2] ?? '';
 
 match (true) {
+
+    // ── Health / diagnóstico ─────────────────────────────────────────────────
+    $method === 'GET' && $s0 === 'health'
+        => (function () {
+            $info = [
+                'php_version' => PHP_VERSION,
+                'pdo_mysql'   => extension_loaded('pdo_mysql'),
+                'db'          => 'unknown',
+                'tables'      => [],
+            ];
+            try {
+                $db = Database::get();
+                $info['db'] = 'ok';
+                $info['tables'] = $db->query("SHOW TABLES")->fetchAll(\PDO::FETCH_COLUMN);
+            } catch (\Throwable $e) {
+                $info['db'] = 'fail: ' . $e->getMessage();
+            }
+            Response::ok($info);
+        })(),
 
     // ── Auth ─────────────────────────────────────────────────────────────────
     $method === 'POST' && $s0 === 'auth' && $s1 === 'register'

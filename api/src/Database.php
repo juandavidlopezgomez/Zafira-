@@ -18,7 +18,7 @@ class Database {
                     PDO::ATTR_EMULATE_PREPARES   => false,
                 ]);
             } catch (PDOException $e) {
-                Response::error('Error de conexión a la base de datos', 500);
+                Response::error('DB connect: ' . $e->getMessage(), 500);
                 exit;
             }
         }
