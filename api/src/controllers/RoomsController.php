@@ -4,7 +4,7 @@ namespace BF\Controllers;
 use BF\{Database, Auth, Response};
 
 class RoomsController {
-    public static function create(): never {
+    public static function create(): void {
         $payload = Auth::requireUser();
         $body    = json_decode(file_get_contents('php://input'), true) ?? [];
         $mode    = trim($body['mode'] ?? '');
@@ -50,7 +50,7 @@ class RoomsController {
         ]);
     }
 
-    public static function findByCode(string $code): never {
+    public static function findByCode(string $code): void {
         Auth::requireUser();
         $db   = Database::get();
         $stmt = $db->prepare('SELECT * FROM rooms WHERE code = ? LIMIT 1');
@@ -72,7 +72,7 @@ class RoomsController {
         ]);
     }
 
-    public static function join(string $code): never {
+    public static function join(string $code): void {
         $payload  = Auth::requireUser();
         $userId   = $payload['sub'];
         $db       = Database::get();
@@ -119,7 +119,7 @@ class RoomsController {
         ]);
     }
 
-    public static function leave(string $roomId): never {
+    public static function leave(string $roomId): void {
         $payload = Auth::requireUser();
         $userId  = $payload['sub'];
         $db      = Database::get();
@@ -133,14 +133,14 @@ class RoomsController {
         Response::ok(null);
     }
 
-    public static function players(string $roomId): never {
+    public static function players(string $roomId): void {
         Auth::requireUser();
         $db      = Database::get();
         $players = self::getPlayers($db, $roomId);
         Response::ok($players);
     }
 
-    public static function state(string $roomId): never {
+    public static function state(string $roomId): void {
         $payload = Auth::requireUser();
         $db      = Database::get();
 

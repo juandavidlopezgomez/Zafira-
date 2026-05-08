@@ -4,7 +4,7 @@ namespace BF\Controllers;
 use BF\{Database, Auth, Response, JWT};
 
 class AuthController {
-    public static function register(): never {
+    public static function register(): void {
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         $username = trim($body['username'] ?? '');
         $email    = strtolower(trim($body['email'] ?? ''));
@@ -58,7 +58,7 @@ class AuthController {
         ]);
     }
 
-    public static function login(): never {
+    public static function login(): void {
         $body     = json_decode(file_get_contents('php://input'), true) ?? [];
         $email    = strtolower(trim($body['email'] ?? ''));
         $password = $body['password'] ?? '';
@@ -89,7 +89,7 @@ class AuthController {
         ]);
     }
 
-    public static function refresh(): never {
+    public static function refresh(): void {
         $body    = json_decode(file_get_contents('php://input'), true) ?? [];
         $token   = $body['refreshToken'] ?? '';
         $payload = JWT::decode($token, JWT_REFRESH_SECRET);
@@ -99,7 +99,7 @@ class AuthController {
         Response::ok($tokens);
     }
 
-    public static function me(): never {
+    public static function me(): void {
         $payload = Auth::requireUser();
         $db      = Database::get();
 

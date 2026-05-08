@@ -4,14 +4,14 @@ namespace BF\Controllers;
 use BF\{Database, Auth, Response};
 
 class LlamasController {
-    public static function balance(): never {
+    public static function balance(): void {
         $payload = Auth::requireUser();
         $db      = Database::get();
         $bal     = self::getBalance($db, $payload['sub']);
         Response::ok(['balance' => $bal]);
     }
 
-    public static function history(): never {
+    public static function history(): void {
         $payload = Auth::requireUser();
         $page    = max(1, (int)($_GET['page'] ?? 1));
         $limit   = min(50, max(1, (int)($_GET['limit'] ?? 20)));

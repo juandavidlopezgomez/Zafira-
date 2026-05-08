@@ -7,7 +7,7 @@ class ArenaController {
     private const MIN_PARTICIPANTS = 5;
     private const PREMIUM_FEATURES = ['sobre_rojo'];
 
-    public static function startFeature(string $roomId): never {
+    public static function startFeature(string $roomId): void {
         $payload = Auth::requireUser();
         $body    = json_decode(file_get_contents('php://input'), true) ?? [];
         $feature = $body['feature'] ?? '';
@@ -38,7 +38,7 @@ class ArenaController {
         ]);
     }
 
-    public static function vote(string $stadiumId): never {
+    public static function vote(string $stadiumId): void {
         $payload  = Auth::requireUser();
         $body     = json_decode(file_get_contents('php://input'), true) ?? [];
         $targetId = $body['targetId'] ?? null;
@@ -68,7 +68,7 @@ class ArenaController {
         Response::ok(['count' => $count]);
     }
 
-    public static function results(string $stadiumId): never {
+    public static function results(string $stadiumId): void {
         Auth::requireUser();
         $db   = Database::get();
         $stmt = $db->prepare('SELECT target_id, COUNT(*) as cnt FROM arena_votes WHERE stadium_id=? GROUP BY target_id ORDER BY cnt DESC');
@@ -84,7 +84,7 @@ class ArenaController {
         Response::ok(['distribution' => $distribution, 'winner' => $winner]);
     }
 
-    public static function end(string $stadiumId): never {
+    public static function end(string $stadiumId): void {
         Auth::requireUser();
         $db = Database::get();
         $db->prepare('UPDATE arena_stadiums SET status=?, ended_at=NOW() WHERE id=?')
@@ -92,7 +92,7 @@ class ArenaController {
         Response::ok(null);
     }
 
-    public static function spinRuleta(): never {
+    public static function spinRuleta(): void {
         Auth::requireUser();
         $opts = [
             ['label' => 'Pierde 20 LLAMAS',              'effect' => 'lose_llamas',       'llamasDelta' => -20],

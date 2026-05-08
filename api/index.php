@@ -1,6 +1,17 @@
 <?php
 declare(strict_types=1);
 
+// Mostrar errores como JSON (útil en producción para debug)
+set_exception_handler(function (Throwable $e) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => false, 'error' => $e->getMessage(), 'file' => basename($e->getFile()), 'line' => $e->getLine()]);
+    exit;
+});
+set_error_handler(function ($severity, $message, $file, $line) {
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/src/Database.php';

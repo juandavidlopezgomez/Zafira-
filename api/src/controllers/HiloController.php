@@ -4,7 +4,7 @@ namespace BF\Controllers;
 use BF\{Database, Auth, Response};
 
 class HiloController {
-    public static function messages(string $roomId): never {
+    public static function messages(string $roomId): void {
         Auth::requireUser();
         $since = (int)($_GET['since'] ?? 0);
         $db    = Database::get();
@@ -21,7 +21,7 @@ class HiloController {
         Response::ok(['messages' => $msgs]);
     }
 
-    public static function send(string $roomId): never {
+    public static function send(string $roomId): void {
         $payload = Auth::requireUser();
         $body    = json_decode(file_get_contents('php://input'), true) ?? [];
         $content = trim($body['content'] ?? '');
@@ -59,7 +59,7 @@ class HiloController {
         ]);
     }
 
-    public static function react(string $roomId): never {
+    public static function react(string $roomId): void {
         $payload    = Auth::requireUser();
         $body       = json_decode(file_get_contents('php://input'), true) ?? [];
         $messageId  = $body['messageId'] ?? '';

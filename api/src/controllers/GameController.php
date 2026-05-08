@@ -8,7 +8,7 @@ use BF\{Database, Auth, Response};
  * y el polling de eventos vía GET /api/game/{roomId}/events
  */
 class GameController {
-    public static function action(string $roomId): never {
+    public static function action(string $roomId): void {
         $payload = Auth::requireUser();
         $userId  = $payload['sub'];
         $body    = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -81,7 +81,7 @@ class GameController {
         Response::json($result);
     }
 
-    public static function events(string $roomId): never {
+    public static function events(string $roomId): void {
         $payload = Auth::requireUser();
         $userId  = $payload['sub'];
         $since   = (int)($_GET['since'] ?? 0);
