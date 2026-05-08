@@ -24,6 +24,7 @@ require_once __DIR__ . '/src/Charisma.php';
 require_once __DIR__ . '/src/Interest.php';
 require_once __DIR__ . '/src/Ai.php';
 require_once __DIR__ . '/src/Challenges.php';
+require_once __DIR__ . '/src/Hilo.php';
 require_once __DIR__ . '/src/controllers/AuthController.php';
 require_once __DIR__ . '/src/controllers/UsersController.php';
 require_once __DIR__ . '/src/controllers/ChallengesController.php';
@@ -212,6 +213,12 @@ match (true) {
 
     $method === 'POST' && $s0 === 'hilo' && $s1 && $s2 === 'react'
         => HiloController::react($s1),
+
+    $method === 'POST' && $s0 === 'hilo' && $s1 && $s2 === 'confession'
+        => HiloController::confession($s1),
+
+    $method === 'GET'  && $s0 === 'hilo' && $s1 && $s2 === 'tension'
+        => HiloController::tension($s1),
 
     // ── Arena ────────────────────────────────────────────────────────────────
     $method === 'POST' && $s0 === 'arena' && $s1 && $s2 === 'start'
