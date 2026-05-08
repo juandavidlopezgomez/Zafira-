@@ -22,8 +22,11 @@ require_once __DIR__ . '/src/Llamas.php';
 require_once __DIR__ . '/src/Badges.php';
 require_once __DIR__ . '/src/Charisma.php';
 require_once __DIR__ . '/src/Interest.php';
+require_once __DIR__ . '/src/Ai.php';
+require_once __DIR__ . '/src/Challenges.php';
 require_once __DIR__ . '/src/controllers/AuthController.php';
 require_once __DIR__ . '/src/controllers/UsersController.php';
+require_once __DIR__ . '/src/controllers/ChallengesController.php';
 require_once __DIR__ . '/src/controllers/RoomsController.php';
 require_once __DIR__ . '/src/controllers/GameController.php';
 require_once __DIR__ . '/src/controllers/LlamasController.php';
@@ -32,7 +35,7 @@ require_once __DIR__ . '/src/controllers/ArenaController.php';
 
 use BF\{Response, Database};
 use BF\Controllers\{AuthController, UsersController, RoomsController, GameController,
-                    LlamasController, HiloController, ArenaController};
+                    LlamasController, HiloController, ArenaController, ChallengesController};
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
@@ -189,6 +192,16 @@ match (true) {
 
     $method === 'POST' && $s0 === 'llamas' && $s1 === 'daily'
         => LlamasController::claimDaily(),
+
+    // ── Challenges (pool + IA fallback) ──────────────────────────────────────
+    $method === 'GET'  && $s0 === 'challenges' && $s1 === 'random'
+        => ChallengesController::random(),
+
+    $method === 'GET'  && $s0 === 'challenges' && !$s1
+        => ChallengesController::list(),
+
+    $method === 'POST' && $s0 === 'challenges' && $s1 === 'seed'
+        => ChallengesController::seed(),
 
     // ── Hilo ─────────────────────────────────────────────────────────────────
     $method === 'GET'  && $s0 === 'hilo' && $s1 && $s2 === 'messages'
