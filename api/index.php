@@ -68,20 +68,21 @@ match (true) {
                 Response::error('schema.sql no encontrado en ' . $sqlFile, 500);
             }
             $sql = file_get_contents($sqlFile);
+            // Quitar líneas de comentario (--) antes de dividir
+            $sql = preg_replace('/^\s*--.*$/m', '', $sql);
             $db  = Database::get();
             $created = [];
             $errors  = [];
-            // Dividir por ; ignorando comentarios
             $statements = array_filter(array_map('trim', explode(';', $sql)));
             foreach ($statements as $stmt) {
-                if ($stmt === '' || str_starts_with($stmt, '--')) continue;
+                if ($stmt === '') continue;
                 try {
                     $db->exec($stmt);
-                    if (preg_match('/CREATE TABLE.*?`(\w+)`/i', $stmt, $m)) {
+                    if (preg_match('/CREATE TABLE.*?`(\w+)`/is', $stmt, $m)) {
                         $created[] = $m[1];
                     }
                 } catch (\Throwable $e) {
-                    $errors[] = ['stmt' => substr($stmt, 0, 80), 'error' => $e->getMessage()];
+                    $errors[] = ['stmt' => substr($stmt, 0, 100), 'error' => $e->getMessage()];
                 }
             }
             $tables = $db->query("SHOW TABLES")->fetchAll(\PDO::FETCH_COLUMN);
