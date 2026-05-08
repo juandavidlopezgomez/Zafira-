@@ -60,6 +60,38 @@ $s2 = $segs[2] ?? '';
 
 match (true) {
 
+    // ── Install (crea tablas desde database/schema.sql) ──────────────────────
+    $method === 'GET' && $s0 === 'install'
+        => (function () {
+            $sqlFile = __DIR__ . '/../database/schema.sql';
+            if (!file_exists($sqlFile)) {
+                Response::error('schema.sql no encontrado en ' . $sqlFile, 500);
+            }
+            $sql = file_get_contents($sqlFile);
+            $db  = Database::get();
+            $created = [];
+            $errors  = [];
+            // Dividir por ; ignorando comentarios
+            $statements = array_filter(array_map('trim', explode(';', $sql)));
+            foreach ($statements as $stmt) {
+                if ($stmt === '' || str_starts_with($stmt, '--')) continue;
+                try {
+                    $db->exec($stmt);
+                    if (preg_match('/CREATE TABLE.*?`(\w+)`/i', $stmt, $m)) {
+                        $created[] = $m[1];
+                    }
+                } catch (\Throwable $e) {
+                    $errors[] = ['stmt' => substr($stmt, 0, 80), 'error' => $e->getMessage()];
+                }
+            }
+            $tables = $db->query("SHOW TABLES")->fetchAll(\PDO::FETCH_COLUMN);
+            Response::ok([
+                'created' => $created,
+                'errors'  => $errors,
+                'tables'  => $tables,
+            ]);
+        })(),
+
     // ── Health / diagnóstico ─────────────────────────────────────────────────
     $method === 'GET' && $s0 === 'health'
         => (function () {
