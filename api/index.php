@@ -18,6 +18,7 @@ require_once __DIR__ . '/src/Database.php';
 require_once __DIR__ . '/src/JWT.php';
 require_once __DIR__ . '/src/Response.php';
 require_once __DIR__ . '/src/Auth.php';
+require_once __DIR__ . '/src/Llamas.php';
 require_once __DIR__ . '/src/controllers/AuthController.php';
 require_once __DIR__ . '/src/controllers/RoomsController.php';
 require_once __DIR__ . '/src/controllers/GameController.php';
@@ -157,6 +158,9 @@ match (true) {
 
     $method === 'GET'  && $s0 === 'llamas' && $s1 === 'history'
         => LlamasController::history(),
+
+    $method === 'POST' && $s0 === 'llamas' && $s1 === 'daily'
+        => LlamasController::claimDaily(),
 
     // ── Hilo ─────────────────────────────────────────────────────────────────
     $method === 'GET'  && $s0 === 'hilo' && $s1 && $s2 === 'messages'

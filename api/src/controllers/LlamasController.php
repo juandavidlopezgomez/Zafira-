@@ -1,13 +1,13 @@
 <?php
 namespace BF\Controllers;
 
-use BF\{Database, Auth, Response};
+use BF\{Database, Auth, Response, Llamas};
 
 class LlamasController {
     public static function balance(): void {
         $payload = Auth::requireUser();
         $db      = Database::get();
-        $bal     = self::getBalance($db, $payload['sub']);
+        $bal     = Llamas::balance($db, $payload['sub']);
         Response::ok(['balance' => $bal]);
     }
 
@@ -22,28 +22,36 @@ class LlamasController {
         $total = (int)$countStmt->fetchColumn();
 
         $stmt = $db->prepare(
-            'SELECT id, amount, reason, session_id, created_at
+            'SELECT id, amount, type, reason, metadata, session_id, created_at
              FROM llamas_transactions WHERE user_id = ?
              ORDER BY created_at DESC LIMIT ? OFFSET ?'
         );
         $stmt->execute([$payload['sub'], $limit, ($page - 1) * $limit]);
-        $items = $stmt->fetchAll();
+        $items = array_map(static function (array $r): array {
+            $r['amount']   = (int)$r['amount'];
+            $r['metadata'] = $r['metadata'] ? json_decode($r['metadata'], true) : null;
+            return $r;
+        }, $stmt->fetchAll());
 
-        Response::ok(['items' => $items, 'total' => (int)$total]);
+        Response::ok([
+            'items'   => $items,
+            'total'   => $total,
+            'page'    => $page,
+            'limit'   => $limit,
+            'balance' => Llamas::balance($db, $payload['sub']),
+        ]);
     }
 
-    public static function getBalance(\PDO $db, string $userId): int {
-        $stmt = $db->prepare('SELECT COALESCE(SUM(amount),0) FROM llamas_transactions WHERE user_id = ?');
-        $stmt->execute([$userId]);
-        return (int)$stmt->fetchColumn();
-    }
-
-    public static function credit(\PDO $db, string $userId, int $amount, string $reason, ?string $sessionId = null): void {
-        $id = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            mt_rand(0,0xffff),mt_rand(0,0xffff),mt_rand(0,0xffff),
-            mt_rand(0,0x0fff)|0x4000,mt_rand(0,0x3fff)|0x8000,
-            mt_rand(0,0xffff),mt_rand(0,0xffff),mt_rand(0,0xffff));
-        $db->prepare('INSERT INTO llamas_transactions (id,user_id,amount,reason,session_id) VALUES (?,?,?,?,?)')
-           ->execute([$id, $userId, abs($amount), $reason, $sessionId]);
+    // GET /api/llamas/daily — reclamar bono diario (idempotente)
+    public static function claimDaily(): void {
+        $payload = Auth::requireUser();
+        $db      = Database::get();
+        $awarded = Llamas::awardDailyIfNeeded($db, $payload['sub']);
+        Response::ok([
+            'claimed'  => $awarded,
+            'amount'   => $awarded ? Llamas::A_DAILY : 0,
+            'balance'  => Llamas::balance($db, $payload['sub']),
+            'message'  => $awarded ? 'Bono diario reclamado' : 'Ya reclamaste el bono hoy',
+        ]);
     }
 }

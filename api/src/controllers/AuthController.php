@@ -1,7 +1,7 @@
 <?php
 namespace BF\Controllers;
 
-use BF\{Database, Auth, Response, JWT};
+use BF\{Database, Auth, Response, JWT, Llamas};
 
 class AuthController {
     public static function register(): void {
@@ -38,11 +38,7 @@ class AuthController {
             'INSERT INTO users (id, username, email, password_hash, referral_code) VALUES (?, ?, ?, ?, ?)'
         )->execute([$id, $username, $email, $passwordHash, $referralCode]);
 
-        // Crédito inicial LLAMAS
-        $txId = self::uuid();
-        $db->prepare(
-            'INSERT INTO llamas_transactions (id, user_id, amount, reason) VALUES (?, ?, ?, ?)'
-        )->execute([$txId, $id, LLAMAS_INITIAL_BALANCE, 'welcome_bonus']);
+        Llamas::awardWelcome($db, $id);
 
         $tokens = Auth::makeTokens($id, $email, false);
 
@@ -74,7 +70,7 @@ class AuthController {
             Response::error('Credenciales inválidas', 401);
         }
 
-        $balance = self::getBalance($db, $user['id']);
+        $balance = Llamas::balance($db, $user['id']);
         $tokens  = Auth::makeTokens($user['id'], $user['email'], (bool)$user['is_premium']);
 
         Response::ok([
@@ -108,26 +104,22 @@ class AuthController {
         $user = $stmt->fetch();
         if (!$user) Response::error('Usuario no encontrado', 404);
 
-        $balance = self::getBalance($db, $user['id']);
+        $balance = Llamas::balance($db, $user['id']);
 
         Response::ok([
-            'id'            => $user['id'],
-            'username'      => $user['username'],
-            'email'         => $user['email'],
-            'avatarUrl'     => $user['avatar_url'],
-            'age'           => $user['age'] ? (int)$user['age'] : null,
-            'isPremium'     => (bool)$user['is_premium'],
-            'charismaPts'   => (int)$user['charisma_pts'],
-            'referralCode'  => $user['referral_code'],
-            'llamasBalance' => $balance,
-            'createdAt'     => $user['created_at'],
+            'id'             => $user['id'],
+            'username'       => $user['username'],
+            'email'          => $user['email'],
+            'avatarUrl'      => $user['avatar_url'],
+            'age'            => $user['age'] ? (int)$user['age'] : null,
+            'ageVerified'    => (bool)($user['age_verified'] ?? false),
+            'isPremium'      => (bool)$user['is_premium'],
+            'charismaPoints' => (int)($user['charisma_points'] ?? 0),
+            'currentRank'    => (int)($user['current_rank'] ?? 1),
+            'referralCode'   => $user['referral_code'],
+            'llamasBalance'  => $balance,
+            'createdAt'      => $user['created_at'],
         ]);
-    }
-
-    private static function getBalance(\PDO $db, string $userId): int {
-        $stmt = $db->prepare('SELECT COALESCE(SUM(amount), 0) as bal FROM llamas_transactions WHERE user_id = ?');
-        $stmt->execute([$userId]);
-        return (int)$stmt->fetchColumn();
     }
 
     private static function uuid(): string {
