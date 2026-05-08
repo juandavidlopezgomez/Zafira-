@@ -19,7 +19,10 @@ require_once __DIR__ . '/src/JWT.php';
 require_once __DIR__ . '/src/Response.php';
 require_once __DIR__ . '/src/Auth.php';
 require_once __DIR__ . '/src/Llamas.php';
+require_once __DIR__ . '/src/Badges.php';
+require_once __DIR__ . '/src/Charisma.php';
 require_once __DIR__ . '/src/controllers/AuthController.php';
+require_once __DIR__ . '/src/controllers/UsersController.php';
 require_once __DIR__ . '/src/controllers/RoomsController.php';
 require_once __DIR__ . '/src/controllers/GameController.php';
 require_once __DIR__ . '/src/controllers/LlamasController.php';
@@ -27,7 +30,7 @@ require_once __DIR__ . '/src/controllers/HiloController.php';
 require_once __DIR__ . '/src/controllers/ArenaController.php';
 
 use BF\{Response, Database};
-use BF\Controllers\{AuthController, RoomsController, GameController,
+use BF\Controllers\{AuthController, UsersController, RoomsController, GameController,
                     LlamasController, HiloController, ArenaController};
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
@@ -125,6 +128,19 @@ match (true) {
 
     $method === 'GET'  && $s0 === 'auth' && $s1 === 'me'
         => AuthController::me(),
+
+    // ── Users (perfil + carisma + insignias) ─────────────────────────────────
+    $method === 'GET' && $s0 === 'users' && $s1 === 'me' && $s2 === 'profile'
+        => UsersController::meProfile(),
+
+    $method === 'GET' && $s0 === 'users' && $s1 === 'me' && $s2 === 'charisma'
+        => UsersController::meCharisma(),
+
+    $method === 'GET' && $s0 === 'users' && $s1 === 'me' && $s2 === 'badges'
+        => UsersController::meBadges(),
+
+    $method === 'GET' && $s0 === 'users' && $s1 && $s2 === 'profile'
+        => UsersController::publicProfile($s1),
 
     // ── Rooms ────────────────────────────────────────────────────────────────
     $method === 'POST' && $s0 === 'rooms' && !$s1
