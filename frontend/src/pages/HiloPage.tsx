@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Send, Eye, EyeOff, Flame } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { io, Socket } from 'socket.io-client'
+import { apiFetch } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -17,6 +17,7 @@ interface HiloMessage {
   aliasId?: string
   username?: string
   tension: number
+  seq: number
   createdAt: string
 }
 
@@ -24,68 +25,69 @@ const REACTIONS = ['🔥', '😳', '💀', '😍', '🤫', '⚡']
 
 export function HiloPage() {
   const { roomId } = useParams<{ roomId: string }>()
-  const navigate = useNavigate()
-  const user = useAuthStore((s) => s.user)
-  const token = useAuthStore((s) => s.token)
+  const navigate   = useNavigate()
+  const user       = useAuthStore((s) => s.user)
 
-  const [messages, setMessages] = useState<HiloMessage[]>([])
-  const [input, setInput] = useState('')
-  const [isAnonymous, setIsAnonymous] = useState(false)
-  const [tensionLevel, setTensionLevel] = useState<1 | 2 | 3 | 4 | 5>(1)
-  const [sending, setSending] = useState(false)
+  const [messages, setMessages]         = useState<HiloMessage[]>([])
+  const [input, setInput]               = useState('')
+  const [isAnonymous, setIsAnonymous]   = useState(false)
+  const [tensionLevel, setTensionLevel] = useState<1|2|3|4|5>(1)
+  const [sending, setSending]           = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const socketRef = useRef<Socket | null>(null)
+  const lastSeqRef     = useRef(0)
+  const pollRef        = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // Polling de mensajes cada 2 s
   useEffect(() => {
-    if (!token || !roomId) return
+    if (!roomId) return
 
-    const s = io(`${import.meta.env.VITE_API_URL ?? window.location.origin}/hilo`, {
-      auth: { token },
-    })
-    socketRef.current = s
-
-    s.on('connect', () => {
-      s.emit('hilo:join', { hiloId: roomId, roomId, userId: user?.id })
-    })
-
-    s.on('hilo:message', (msg: HiloMessage) => {
-      setMessages((prev) => [...prev, msg])
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    })
-
-    s.on('hilo:tension_changed', ({ level }: { hiloId: string; level: number }) => {
-      setTensionLevel(level as 1 | 2 | 3 | 4 | 5)
-    })
-
-    s.on('hilo:moderation_block', () => {
-      toast.error('Mensaje bloqueado por moderación')
-    })
-
-    return () => {
-      s.disconnect()
+    const poll = async () => {
+      try {
+        const res = await apiFetch<{ messages: HiloMessage[] }>(
+          `/hilo/${roomId}/messages?since=${lastSeqRef.current}`
+        )
+        if (res.messages.length) {
+          setMessages((prev) => {
+            const newMsgs = res.messages.filter(
+              (m) => m.seq > lastSeqRef.current
+            )
+            if (!newMsgs.length) return prev
+            lastSeqRef.current = Math.max(...newMsgs.map((m) => m.seq))
+            const maxTension = Math.max(...newMsgs.map((m) => m.tension), 0)
+            if (maxTension > 0) setTensionLevel(Math.min(5, Math.ceil(maxTension / 2)) as 1|2|3|4|5)
+            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+            return [...prev, ...newMsgs]
+          })
+        }
+      } catch { /* red momentáneamente caída */ }
     }
-  }, [token, roomId])
+
+    poll()
+    pollRef.current = setInterval(poll, 2000)
+    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+  }, [roomId])
 
   const sendMessage = async () => {
-    if (!input.trim() || sending || !socketRef.current) return
+    if (!input.trim() || sending) return
     setSending(true)
-
-    socketRef.current.emit(
-      'hilo:send_message',
-      { content: input.trim(), isAnonymous },
-      (res: { success: boolean; error?: string }) => {
-        setSending(false)
-        if (!res.success) {
-          toast.error(res.error ?? 'Error al enviar')
-        } else {
-          setInput('')
-        }
-      },
-    )
+    try {
+      await apiFetch(`/hilo/${roomId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ content: input.trim(), isAnonymous }),
+      })
+      setInput('')
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Error al enviar')
+    } finally {
+      setSending(false)
+    }
   }
 
-  const reactToMessage = (messageId: string, reaction: string) => {
-    socketRef.current?.emit('hilo:react', { messageId, reaction })
+  const reactToMessage = async (messageId: string, reaction: string) => {
+    await apiFetch(`/hilo/${roomId}/react`, {
+      method: 'POST',
+      body: JSON.stringify({ messageId, reaction }),
+    }).catch(() => null)
   }
 
   const tensionColors: Record<number, string> = {
@@ -121,9 +123,8 @@ export function HiloPage() {
       <div className="flex-1 overflow-y-auto max-w-lg mx-auto w-full px-4 py-4 space-y-3">
         <AnimatePresence initial={false}>
           {messages.map((msg) => {
-            const isOwn = msg.userId === user?.id
+            const isOwn      = msg.userId === user?.id
             const displayName = msg.aliasId ? `👤 ${msg.aliasId}` : (msg.username ?? 'Usuario')
-
             return (
               <motion.div
                 key={msg.id}
@@ -145,14 +146,10 @@ export function HiloPage() {
                   }`}>
                     {msg.content}
                   </div>
-                  {/* Reacciones */}
                   <div className="flex gap-1 px-1">
                     {REACTIONS.map((r) => (
-                      <button
-                        key={r}
-                        onClick={() => reactToMessage(msg.id, r)}
-                        className="text-xs opacity-40 hover:opacity-100 transition-opacity hover:scale-125 transform"
-                      >
+                      <button key={r} onClick={() => reactToMessage(msg.id, r)}
+                        className="text-xs opacity-40 hover:opacity-100 transition-opacity hover:scale-125 transform">
                         {r}
                       </button>
                     ))}
@@ -163,7 +160,6 @@ export function HiloPage() {
           })}
         </AnimatePresence>
         <div ref={messagesEndRef} />
-
         {messages.length === 0 && (
           <div className="text-center py-12 text-text-muted">
             <Flame className="w-10 h-10 mx-auto mb-3 opacity-30" />
@@ -178,7 +174,7 @@ export function HiloPage() {
         <div className="max-w-lg mx-auto">
           {isAnonymous && (
             <div className="text-xs text-battle mb-2 flex items-center gap-1">
-              <EyeOff className="w-3 h-3" /> Modo anónimo activado — tu identidad está oculta
+              <EyeOff className="w-3 h-3" /> Modo anónimo activado
             </div>
           )}
           <div className="flex gap-2">
@@ -190,12 +186,7 @@ export function HiloPage() {
               className="flex-1"
               maxLength={500}
             />
-            <Button
-              variant="battle"
-              size="icon"
-              onClick={sendMessage}
-              disabled={!input.trim() || sending}
-            >
+            <Button variant="battle" size="icon" onClick={sendMessage} disabled={!input.trim() || sending}>
               <Send className="w-4 h-4" />
             </Button>
           </div>

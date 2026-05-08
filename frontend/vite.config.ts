@@ -17,18 +17,9 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      // En desarrollo el proxy apunta al servidor PHP local (php -S localhost:8080 -t backend-php)
       '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-      },
-      '/socket.io': {
-        target: 'http://localhost:3001',
-        ws: true,
-        changeOrigin: true,
-      },
-      '/hilo': {
-        target: 'http://localhost:3001',
-        ws: true,
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, LlamasBadge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { apiFetch } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth.store'
 import { useRoomStore } from '@/stores/room.store'
 import { useSocket } from '@/hooks/useSocket'
@@ -49,8 +50,10 @@ export function GameRoomPage() {
   useEffect(() => {
     if (!code) return
 
-    // Unirse a la sala via Socket
-    emit<{ success: boolean; data?: RoomJoinedPayload; error?: string }>('room:join', { code })
+    // Unirse a la sala vía REST
+    apiFetch<{ success: boolean; data?: RoomJoinedPayload; error?: string }>(
+      `/rooms/${code}/join`, { method: 'POST' }
+    )
       .then((res) => {
         if (!res.success || !res.data) {
           toast.error(res.error ?? 'No se pudo unir a la sala')
@@ -91,7 +94,8 @@ export function GameRoomPage() {
 
     return () => {
       offJoined(); offLeft(); offStarted(); offMatch(); offLlamas()
-      emit('room:leave').catch(() => null)
+      const rid = useRoomStore.getState().roomId
+      if (rid) apiFetch(`/rooms/${rid}/leave`, { method: 'POST' }).catch(() => null)
       reset()
     }
   }, [code])

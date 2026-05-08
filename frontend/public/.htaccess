@@ -1,0 +1,13 @@
+# Redirige todo a index.html excepto archivos reales y la carpeta /api
+RewriteEngine On
+
+# Si el archivo o directorio existe, servirlo directo
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Rutas /api/* van al backend PHP
+RewriteRule ^api/(.*)$ api/$1 [QSA,L]
+
+# Todo lo demás → React SPA
+RewriteRule ^ index.html [QSA,L]

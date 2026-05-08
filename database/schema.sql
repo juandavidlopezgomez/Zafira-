@@ -103,4 +103,64 @@ CREATE TABLE IF NOT EXISTS `arena_votes` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ─── room_players (reemplaza Redis hset) ─────────────────────
+CREATE TABLE IF NOT EXISTS `room_players` (
+  `room_id`    VARCHAR(36)   NOT NULL,
+  `user_id`    VARCHAR(36)   NOT NULL,
+  `username`   VARCHAR(255)  NOT NULL,
+  `joined_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_seen`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`room_id`, `user_id`),
+  KEY `FK_rp_room` (`room_id`),
+  KEY `FK_rp_user` (`user_id`),
+  CONSTRAINT `FK_rp_room` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `FK_rp_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─── game_events (cola de polling) ───────────────────────────
+CREATE TABLE IF NOT EXISTS `game_events` (
+  `id`             BIGINT        NOT NULL AUTO_INCREMENT,
+  `room_id`        VARCHAR(36)   NOT NULL,
+  `event_type`     VARCHAR(64)   NOT NULL,
+  `payload`        JSON          NOT NULL DEFAULT (JSON_OBJECT()),
+  `target_user_id` VARCHAR(36)   DEFAULT NULL,
+  `created_at`     DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  KEY `idx_ge_room_id` (`room_id`, `id`),
+  KEY `idx_ge_target`  (`target_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─── game_state (reemplaza Redis key-value) ───────────────────
+CREATE TABLE IF NOT EXISTS `game_state` (
+  `room_id`     VARCHAR(36)   NOT NULL,
+  `state_key`   VARCHAR(128)  NOT NULL,
+  `state_value` MEDIUMTEXT    NOT NULL,
+  `expires_at`  DATETIME      DEFAULT NULL,
+  PRIMARY KEY (`room_id`, `state_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─── hilo_messages ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `hilo_messages` (
+  `id`         VARCHAR(36)   NOT NULL,
+  `seq`        BIGINT        NOT NULL AUTO_INCREMENT,
+  `room_id`    VARCHAR(36)   NOT NULL,
+  `user_id`    VARCHAR(36)   DEFAULT NULL,
+  `alias_id`   VARCHAR(32)   DEFAULT NULL,
+  `username`   VARCHAR(255)  DEFAULT NULL,
+  `content`    TEXT          NOT NULL,
+  `tension`    TINYINT       NOT NULL DEFAULT 0,
+  `created_at` DATETIME(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UQ_hilo_seq` (`seq`),
+  KEY `idx_hilo_room` (`room_id`, `seq`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─── hilo_reactions ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `hilo_reactions` (
+  `message_id` VARCHAR(36)  NOT NULL,
+  `user_id`    VARCHAR(36)  NOT NULL,
+  `reaction`   VARCHAR(8)   NOT NULL,
+  PRIMARY KEY (`message_id`, `user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

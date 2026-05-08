@@ -1,17 +1,18 @@
-# Dependencies
+# Dependencias
 node_modules/
-.pnp
-.pnp.js
+vendor/
 
-# Build outputs
+# Build y deploy
 dist/
 build/
 deploy/
 
-# Environment variables
+# Variables de entorno con datos reales
 .env
 .env.local
 .env.*.local
+# El config.php con credenciales reales NUNCA se sube
+backend-php/config.php
 
 # IDE
 .vscode/
@@ -19,7 +20,7 @@ deploy/
 *.swp
 *.swo
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
@@ -27,14 +28,7 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Large binaries / installers
-*.exe
-*.msi
-*.dmg
-
-# Coverage
+# Cobertura y temporales
 coverage/
-
-# Temp
 .tmp/
 tmp/

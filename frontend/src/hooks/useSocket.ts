@@ -1,44 +1,47 @@
-import { useEffect, useRef, useCallback } from 'react'
-import type { Socket } from 'socket.io-client'
-import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket'
+import { useEffect, useCallback } from 'react'
+import { apiFetch } from '@/lib/api'
+import { eventBus, startPolling, stopPolling } from '@/lib/socket'
 import { useAuthStore } from '@/stores/auth.store'
+import { useRoomStore } from '@/stores/room.store'
 
+/**
+ * Reemplaza el hook de Socket.IO por HTTP polling + REST.
+ * La interfaz (emit / on) es idéntica para no cambiar los componentes de juego.
+ */
 export function useSocket() {
-  const token = useAuthStore((s) => s.token)
-  const socketRef = useRef<Socket | null>(null)
+  const token  = useAuthStore((s) => s.token)
+  const roomId = useRoomStore((s) => s.roomId)
 
   useEffect(() => {
-    if (!token) return
+    if (!token || !roomId) return
+    startPolling(roomId)
+    return () => stopPolling()
+  }, [token, roomId])
 
-    const s = connectSocket(token)
-    socketRef.current = s
+  /** Envía un evento al backend y devuelve la respuesta */
+  const emit = useCallback(
+    <T>(event: string, payload?: unknown): Promise<T> => {
+      const rid = useRoomStore.getState().roomId
+      if (!rid) return Promise.reject(new Error('Sin sala activa'))
+      return apiFetch<T>(`/game/${rid}/action`, {
+        method: 'POST',
+        body: JSON.stringify({ event, payload }),
+      })
+    },
+    []
+  )
 
-    return () => {
-      disconnectSocket()
-      socketRef.current = null
-    }
-  }, [token])
-
-  const emit = useCallback(<T>(event: string, payload?: unknown): Promise<T> => {
-    return new Promise((resolve, reject) => {
-      const s = socketRef.current ?? getSocket()
-      if (!s.connected) {
-        reject(new Error('Socket no conectado'))
-        return
-      }
-      if (payload !== undefined) {
-        s.emit(event, payload, (res: T) => resolve(res))
-      } else {
-        s.emit(event, (res: T) => resolve(res))
-      }
-    })
-  }, [])
-
+  /** Suscribe a eventos del bus local (alimentado por el polling) */
   const on = useCallback(<T>(event: string, handler: (data: T) => void) => {
-    const s = socketRef.current ?? getSocket()
-    s.on(event, handler as (...args: unknown[]) => void)
-    return () => { s.off(event, handler as (...args: unknown[]) => void) }
+    const h = (data: unknown) => handler(data as T)
+    eventBus.on(event, h)
+    return () => eventBus.off(event, h)
   }, [])
 
-  return { socket: socketRef.current, emit, on, isConnected: socketRef.current?.connected ?? false }
+  return {
+    socket: null,
+    emit,
+    on,
+    isConnected: !!roomId,
+  }
 }
