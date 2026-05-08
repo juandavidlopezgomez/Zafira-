@@ -1,7 +1,7 @@
 <?php
 namespace BF\Controllers;
 
-use BF\{Database, Auth, Response};
+use BF\{Database, Auth, Response, Interest, Llamas};
 
 class RoomsController {
     public static function create(): void {
@@ -190,6 +190,84 @@ class RoomsController {
         $db->prepare(
             'INSERT INTO game_events (room_id, event_type, payload, target_user_id) VALUES (?, ?, ?, ?)'
         )->execute([$roomId, $type, json_encode($payload), $targetUserId]);
+    }
+
+    // ─── POST /api/rooms/:id/interest — señal silenciosa ─────────────────────
+    // Body: { targetId: string, action?: 'add' | 'remove' }
+    // Nunca emite evento broadcast. Idempotente.
+    public static function signalInterest(string $roomId): void {
+        $payload = Auth::requireUser();
+        $body    = json_decode(file_get_contents('php://input'), true) ?? [];
+        $target  = $body['targetId'] ?? '';
+        $action  = $body['action']   ?? 'add';
+
+        if (!$target) Response::error('targetId requerido');
+        if ($target === $payload['sub']) Response::error('No puedes señalarte a ti mismo');
+
+        $db = Database::get();
+
+        // Validar que ambos están en la sala
+        $check = $db->prepare(
+            'SELECT COUNT(*) FROM room_players WHERE room_id = ? AND user_id IN (?, ?)'
+        );
+        $check->execute([$roomId, $payload['sub'], $target]);
+        if ((int)$check->fetchColumn() < 2) {
+            Response::error('Ambos usuarios deben estar en la sala', 400);
+        }
+
+        if ($action === 'remove') {
+            Interest::unsignal($db, $roomId, $payload['sub'], $target);
+        } else {
+            Interest::signal($db, $roomId, $payload['sub'], $target);
+        }
+
+        Response::ok([
+            'roomId'  => $roomId,
+            'action'  => $action,
+            'targets' => Interest::myInterests($db, $roomId, $payload['sub']),
+        ]);
+    }
+
+    // ─── GET /api/rooms/:id/interest/me — lista de mis señales (privado) ─────
+    public static function myInterest(string $roomId): void {
+        $payload = Auth::requireUser();
+        $db      = Database::get();
+        Response::ok([
+            'targets' => Interest::myInterests($db, $roomId, $payload['sub']),
+        ]);
+    }
+
+    // ─── POST /api/rooms/:id/end — solo el host puede finalizar ──────────────
+    // Computa matches mutuos, premia a los involucrados, emite reveal privados.
+    public static function end(string $roomId): void {
+        $payload = Auth::requireUser();
+        $db      = Database::get();
+
+        $stmt = $db->prepare('SELECT * FROM rooms WHERE id = ? LIMIT 1');
+        $stmt->execute([$roomId]);
+        $room = $stmt->fetch();
+        if (!$room) Response::error('Sala no encontrada', 404);
+
+        if ($room['host_id'] !== $payload['sub']) {
+            Response::error('Solo el host puede finalizar la partida', 403);
+        }
+
+        // Marcar sala como finalizada
+        $db->prepare("UPDATE rooms SET status = 'finished', ended_at = NOW() WHERE id = ?")
+           ->execute([$roomId]);
+
+        // Reveal de matches mutuos
+        $matches = Interest::revealMatches($db, $roomId);
+
+        // Evento global: la partida terminó (sin info sensible)
+        self::pushEvent($db, $roomId, 'room:ended', [
+            'totalMatches' => count($matches),
+        ]);
+
+        Response::ok([
+            'roomId'       => $roomId,
+            'totalMatches' => count($matches),
+        ]);
     }
 
     private static function cleanupInactivePlayers(\PDO $db, string $roomId): void {

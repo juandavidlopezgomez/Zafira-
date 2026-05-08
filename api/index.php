@@ -21,6 +21,7 @@ require_once __DIR__ . '/src/Auth.php';
 require_once __DIR__ . '/src/Llamas.php';
 require_once __DIR__ . '/src/Badges.php';
 require_once __DIR__ . '/src/Charisma.php';
+require_once __DIR__ . '/src/Interest.php';
 require_once __DIR__ . '/src/controllers/AuthController.php';
 require_once __DIR__ . '/src/controllers/UsersController.php';
 require_once __DIR__ . '/src/controllers/RoomsController.php';
@@ -61,6 +62,7 @@ $segs = array_values(array_filter(explode('/', $uri)));
 $s0 = $segs[0] ?? '';
 $s1 = $segs[1] ?? '';
 $s2 = $segs[2] ?? '';
+$s3 = $segs[3] ?? '';
 
 match (true) {
 
@@ -160,6 +162,16 @@ match (true) {
 
     $method === 'GET'  && $s0 === 'rooms' && $s1 && $s2 === 'state'
         => RoomsController::state($s1),
+
+    // Matches reveal-only
+    $method === 'POST' && $s0 === 'rooms' && $s1 && $s2 === 'interest'
+        => RoomsController::signalInterest($s1),
+
+    $method === 'GET'  && $s0 === 'rooms' && $s1 && $s2 === 'interest' && $s3 === 'me'
+        => RoomsController::myInterest($s1),
+
+    $method === 'POST' && $s0 === 'rooms' && $s1 && $s2 === 'end'
+        => RoomsController::end($s1),
 
     // ── Game ─────────────────────────────────────────────────────────────────
     $method === 'POST' && $s0 === 'game' && $s1 && $s2 === 'action'
