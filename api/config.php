@@ -17,6 +17,8 @@ define('STRIPE_SECRET_KEY',     '');
 define('STRIPE_WEBHOOK_SECRET', '');
 define('STRIPE_PRICE_ID',       '');
 
+// IA: pon UNA de las dos. Groq es gratis y rápido (https://console.groq.com/keys)
+define('GROQ_API_KEY',   '');
 define('OPENAI_API_KEY', '');
 
 define('LLAMAS_INITIAL_BALANCE', 100);
