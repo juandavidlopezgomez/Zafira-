@@ -25,6 +25,7 @@ require_once __DIR__ . '/src/Interest.php';
 require_once __DIR__ . '/src/Ai.php';
 require_once __DIR__ . '/src/Challenges.php';
 require_once __DIR__ . '/src/Hilo.php';
+require_once __DIR__ . '/src/Arena.php';
 require_once __DIR__ . '/src/controllers/AuthController.php';
 require_once __DIR__ . '/src/controllers/UsersController.php';
 require_once __DIR__ . '/src/controllers/ChallengesController.php';
@@ -224,6 +225,10 @@ match (true) {
     $method === 'POST' && $s0 === 'arena' && $s1 && $s2 === 'start'
         => ArenaController::startFeature($s1),
 
+    // Dispatcher genérico de las 9 features (silla, sobre, quién, term, epic, ship)
+    $method === 'POST' && $s0 === 'arena' && $s1 && $s2 === 'action'
+        => ArenaController::action($s1),
+
     $method === 'POST' && $s0 === 'arena' && $s1 && $s2 === 'vote'
         => ArenaController::vote($s1),
 
@@ -235,6 +240,13 @@ match (true) {
 
     $method === 'GET'  && $s0 === 'arena' && $s1 === 'ruleta'
         => ArenaController::spinRuleta(),
+
+    // Corona Semanal (global, no per-room)
+    $method === 'GET'  && $s0 === 'arena' && $s1 === 'corona'
+        => ArenaController::corona(),
+
+    $method === 'POST' && $s0 === 'arena' && $s1 === 'corona' && $s2 === 'award'
+        => ArenaController::awardCorona(),
 
     // ── 404 ──────────────────────────────────────────────────────────────────
     default => Response::error("Ruta no encontrada: {$method} {$uri}", 404),
