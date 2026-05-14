@@ -1,14 +1,16 @@
 <?php
 namespace BF\Controllers;
 
-use BF\{Database, Auth, Response, JWT, Llamas};
+use BF\{Database, Auth, Response, JWT, Llamas, Referrals};
 
 class AuthController {
     public static function register(): void {
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
-        $username = trim($body['username'] ?? '');
-        $email    = strtolower(trim($body['email'] ?? ''));
-        $password = $body['password'] ?? '';
+        $username    = trim($body['username'] ?? '');
+        $email       = strtolower(trim($body['email'] ?? ''));
+        $password    = $body['password'] ?? '';
+        $age         = isset($body['age']) ? (int)$body['age'] : null;
+        $referralCode = trim($body['referralCode'] ?? '');
 
         if (!$username || !$email || !$password) {
             Response::error('username, email y password son requeridos');
@@ -32,13 +34,18 @@ class AuthController {
 
         $id           = self::uuid();
         $passwordHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
-        $referralCode = 'REF-' . strtoupper(substr($id, 0, 6));
+        $myRefCode    = 'BF-' . strtoupper(substr($id, 0, 8));
 
         $db->prepare(
-            'INSERT INTO users (id, username, email, password_hash, referral_code) VALUES (?, ?, ?, ?, ?)'
-        )->execute([$id, $username, $email, $passwordHash, $referralCode]);
+            'INSERT INTO users (id, username, email, password_hash, referral_code, age) VALUES (?, ?, ?, ?, ?, ?)'
+        )->execute([$id, $username, $email, $passwordHash, $myRefCode, $age]);
 
         Llamas::awardWelcome($db, $id);
+
+        // Aplicar código de referido si fue proporcionado
+        if ($referralCode) {
+            Referrals::applyCode($db, $id, $referralCode);
+        }
 
         $tokens = Auth::makeTokens($id, $email, false);
 

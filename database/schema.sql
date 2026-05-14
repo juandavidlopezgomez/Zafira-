@@ -373,6 +373,7 @@ CREATE TABLE IF NOT EXISTS `beta_codes` (
   `code`       VARCHAR(20)  NOT NULL,
   `used_by`    VARCHAR(36)  DEFAULT NULL,
   `used_at`    DATETIME     DEFAULT NULL,
+  `expires_at` DATETIME     DEFAULT NULL,
   `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UQ_beta_code` (`code`)

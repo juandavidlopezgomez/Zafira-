@@ -26,6 +26,8 @@ require_once __DIR__ . '/src/Ai.php';
 require_once __DIR__ . '/src/Challenges.php';
 require_once __DIR__ . '/src/Hilo.php';
 require_once __DIR__ . '/src/Arena.php';
+require_once __DIR__ . '/src/Premium.php';
+require_once __DIR__ . '/src/Referrals.php';
 require_once __DIR__ . '/src/controllers/AuthController.php';
 require_once __DIR__ . '/src/controllers/UsersController.php';
 require_once __DIR__ . '/src/controllers/ChallengesController.php';
@@ -34,10 +36,13 @@ require_once __DIR__ . '/src/controllers/GameController.php';
 require_once __DIR__ . '/src/controllers/LlamasController.php';
 require_once __DIR__ . '/src/controllers/HiloController.php';
 require_once __DIR__ . '/src/controllers/ArenaController.php';
+require_once __DIR__ . '/src/controllers/PaymentsController.php';
+require_once __DIR__ . '/src/controllers/ReferralsController.php';
 
 use BF\{Response, Database};
 use BF\Controllers\{AuthController, UsersController, RoomsController, GameController,
-                    LlamasController, HiloController, ArenaController, ChallengesController};
+                    LlamasController, HiloController, ArenaController, ChallengesController,
+                    PaymentsController, ReferralsController};
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
@@ -247,6 +252,39 @@ match (true) {
 
     $method === 'POST' && $s0 === 'arena' && $s1 === 'corona' && $s2 === 'award'
         => ArenaController::awardCorona(),
+
+    // ── Payments (Stripe) ────────────────────────────────────────────────────
+    $method === 'POST' && $s0 === 'payments' && $s1 === 'create-subscription'
+        => PaymentsController::createSubscription(),
+
+    $method === 'GET'  && $s0 === 'payments' && $s1 === 'status'
+        => PaymentsController::status(),
+
+    $method === 'POST' && $s0 === 'payments' && $s1 === 'cancel'
+        => PaymentsController::cancel(),
+
+    $method === 'POST' && $s0 === 'payments' && $s1 === 'webhook'
+        => PaymentsController::webhook(),
+
+    // ── Referrals ────────────────────────────────────────────────────────────
+    $method === 'GET'  && $s0 === 'referrals' && $s1 === 'code'
+        => ReferralsController::myCode(),
+
+    $method === 'POST' && $s0 === 'referrals' && $s1 === 'apply'
+        => ReferralsController::apply(),
+
+    $method === 'GET'  && $s0 === 'referrals' && $s1 === 'stats'
+        => ReferralsController::stats(),
+
+    // ── Beta codes ───────────────────────────────────────────────────────────
+    $method === 'GET'  && $s0 === 'beta' && $s1 === 'validate'
+        => ReferralsController::validateBeta(),
+
+    $method === 'POST' && $s0 === 'beta' && $s1 === 'redeem'
+        => ReferralsController::redeemBeta(),
+
+    $method === 'POST' && $s0 === 'beta' && $s1 === 'create'
+        => ReferralsController::createBeta(),
 
     // ── 404 ──────────────────────────────────────────────────────────────────
     default => Response::error("Ruta no encontrada: {$method} {$uri}", 404),

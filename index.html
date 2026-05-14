@@ -1,14 +1,990 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
-    <script type="module" crossorigin src="/assets/index-CRWlnlGX.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-ChktYXbB.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BattleFlirt</title>
+  <style>
+    :root {
+      --bg: #0f0f1a; --bg2: #1a1a2e; --bg3: #16213e;
+      --accent: #e94560; --accent2: #ff6b35; --gold: #ffd700;
+      --text: #e8e8f0; --text2: #a0a0b8; --border: #2a2a4a;
+      --success: #22c55e; --warn: #f59e0b; --info: #3b82f6;
+      --radius: 12px; --shadow: 0 4px 20px rgba(0,0,0,.5);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+    #app { max-width: 480px; margin: 0 auto; min-height: 100vh; position: relative; }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 15px; font-weight: 600; transition: all .2s; }
+    .btn-primary { background: var(--accent); color: #fff; width: 100%; }
+    .btn-primary:hover { background: #c73652; }
+    .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); width: 100%; }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-gold { background: linear-gradient(135deg, var(--gold), var(--accent2)); color: #000; }
+    .btn-sm { padding: 7px 14px; font-size: 13px; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    input, textarea, select { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 12px 14px; width: 100%; font-size: 15px; outline: none; }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    label { font-size: 13px; color: var(--text2); margin-bottom: 4px; display: block; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+    h1 { font-size: 28px; font-weight: 800; }
+    h2 { font-size: 20px; font-weight: 700; }
+    h3 { font-size: 16px; font-weight: 600; }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-accent { background: rgba(233,69,96,.2); color: var(--accent); border: 1px solid var(--accent); }
+    .badge-gold { background: rgba(255,215,0,.15); color: var(--gold); border: 1px solid var(--gold); }
+    .badge-info { background: rgba(59,130,246,.2); color: var(--info); border: 1px solid var(--info); }
+    .badge-success { background: rgba(34,197,94,.2); color: var(--success); border: 1px solid var(--success); }
+    .toast-container { position: fixed; top: 16px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; font-size: 14px; max-width: 300px; animation: fadeIn .3s ease; box-shadow: var(--shadow); }
+    .toast-success { border-color: var(--success); color: var(--success); }
+    .toast-error   { border-color: var(--accent); color: var(--accent); }
+    .toast-info    { border-color: var(--info); color: var(--info); }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(-10px); } to { opacity:1; transform: translateY(0); } }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 50; }
+    .llamas-chip { display: flex; align-items: center; gap: 5px; background: rgba(255,215,0,.1); border: 1px solid var(--gold); border-radius: 20px; padding: 4px 12px; font-size: 14px; font-weight: 700; color: var(--gold); }
+    .auth-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; gap: 20px; }
+    .logo { font-size: 44px; font-weight: 900; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .tension-bar { height: 6px; border-radius: 3px; transition: width .5s, background .5s; }
+    .tension-wrap { background: var(--bg3); border-radius: 3px; overflow: hidden; }
+    .player-item { display: flex; align-items: center; gap: 12px; padding: 10px; background: var(--bg3); border-radius: 8px; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .challenge-card { background: linear-gradient(135deg, var(--bg2), var(--bg3)); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; text-align: center; }
+    .challenge-text { font-size: 18px; font-weight: 600; line-height: 1.5; margin: 16px 0; color: var(--text); }
+    .arena-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .arena-feature { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; text-align: center; cursor: pointer; transition: all .2s; }
+    .arena-feature:hover { border-color: var(--accent); background: rgba(233,69,96,.08); }
+    .arena-feature .icon { font-size: 28px; margin-bottom: 5px; }
+    .chat-area { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; flex: 1; overflow-y: auto; }
+    .chat-msg { padding: 10px 14px; border-radius: 12px; max-width: 85%; word-break: break-word; }
+    .chat-msg.mine  { align-self: flex-end; background: rgba(233,69,96,.2); border: 1px solid rgba(233,69,96,.3); }
+    .chat-msg.other { align-self: flex-start; background: var(--bg3); border: 1px solid var(--border); }
+    .chat-msg .sender { font-size: 11px; color: var(--text2); margin-bottom: 3px; }
+    .chat-msg .text { font-size: 14px; }
+    .chat-msg .reactions { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+    .reaction-pill { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
+    .page { padding: 16px 16px 80px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .flex { display: flex; }
+    .flex-col { display: flex; flex-direction: column; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .text-sm { font-size: 13px; }
+    .text-xs { font-size: 11px; }
+    .text-muted { color: var(--text2); }
+    .text-accent { color: var(--accent); }
+    .text-gold { color: var(--gold); }
+    .text-success { color: var(--success); }
+    .mt-2 { margin-top: 8px; }
+    .mt-4 { margin-top: 16px; }
+    .mb-2 { margin-bottom: 8px; }
+    .mb-4 { margin-bottom: 16px; }
+    .w-full { width: 100%; }
+    .hidden { display: none !important; }
+    .loading { text-align: center; padding: 40px; color: var(--text2); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="toast-container" class="toast-container"></div>
+  <div id="root"></div>
+</div>
+<script>
+'use strict';
+const API = '/api';
+let _token = localStorage.getItem('bf_token') || '';
+let _user  = JSON.parse(localStorage.getItem('bf_user') || 'null');
+let _room  = null;
+let _pollTimer = null;
+let _lastEventId = 0;
+let _currentPage = '';
+let _hiloLastSeq = 0;
+let _hiloTimer   = null;
+let _gameState = { status:'waiting', currentChallenge:null, players:[], mode:'', roomId:'' };
+
+async function api(method, path, body, noAuth) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (_token && !noAuth) headers['Authorization'] = 'Bearer ' + _token;
+  const opts = { method, headers };
+  if (body && method !== 'GET') opts.body = JSON.stringify(body);
+  const url = API + path;
+  const res = await fetch(url, opts);
+  let data = {};
+  try { data = await res.json(); } catch(_){}
+  if (!res.ok) throw new Error(data.error || 'Error ' + res.status);
+  return data.data !== undefined ? data.data : data;
+}
+
+function toast(msg, type='info', dur=3500) {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), dur);
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function stopPolling() { if(_pollTimer){clearInterval(_pollTimer);_pollTimer=null;} }
+function stopHilo()    { if(_hiloTimer){clearInterval(_hiloTimer);_hiloTimer=null;} _hiloLastSeq=0; }
+
+function render(page, props={}) {
+  _currentPage = page;
+  stopPolling(); stopHilo();
+  const root = document.getElementById('root');
+  if (page==='auth')    root.innerHTML = authHtml();
+  else if (page==='lobby')   lobbyPage(root);
+  else if (page==='room')    roomPage(root, props);
+  else if (page==='hilo')    hiloPage(root, props);
+  else if (page==='arena')   arenaPage(root, props);
+  else if (page==='profile') profilePage(root);
+  else if (page==='premium') premiumPage(root);
+}
+
+/* ══════════════ AUTH ══════════════ */
+function authHtml() {
+  return `<div class="auth-screen">
+    <div class="logo">BattleFlirt🔥</div>
+    <p class="text-muted" style="text-align:center;font-size:14px">El juego social más intenso</p>
+    <div class="card w-full" style="max-width:380px">
+      <div style="display:flex;gap:8px;margin-bottom:18px">
+        <button class="btn btn-primary" style="flex:1" id="tab-login" onclick="switchTab('login')">Entrar</button>
+        <button class="btn btn-secondary" style="flex:1" id="tab-reg" onclick="switchTab('register')">Registro</button>
+      </div>
+      <div id="pane-login">
+        <div class="form-group"><label>Email</label><input id="l-email" type="email" placeholder="tu@email.com"/></div>
+        <div class="form-group"><label>Contraseña</label><input id="l-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+        <button class="btn btn-primary" onclick="doLogin()">Entrar 🚀</button>
+      </div>
+      <div id="pane-reg" class="hidden">
+        <div class="form-group"><label>Usuario</label><input id="r-user" placeholder="batallador123"/></div>
+        <div class="form-group"><label>Email</label><input id="r-email" type="email" placeholder="tu@email.com"/></div>
+        <div class="form-group"><label>Contraseña (min 8)</label><input id="r-pass" type="password" placeholder="••••••••"/></div>
+        <div class="form-group"><label>Edad</label><input id="r-age" type="number" min="16" max="99" placeholder="18"/></div>
+        <div class="form-group"><label>Código referido (opcional)</label><input id="r-ref" placeholder="BF-XXXXXXXX"/></div>
+        <button class="btn btn-primary" onclick="doRegister()">Crear cuenta ✨</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function switchTab(t) {
+  document.getElementById('pane-login').classList.toggle('hidden', t!=='login');
+  document.getElementById('pane-reg').classList.toggle('hidden', t!=='register');
+  document.getElementById('tab-login').className = t==='login' ? 'btn btn-primary' : 'btn btn-secondary';
+  document.getElementById('tab-reg').className   = t==='register' ? 'btn btn-primary' : 'btn btn-secondary';
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  if (!email||!pass) return toast('Completa todos los campos','error');
+  try {
+    const d = await api('POST','/auth/login',{email,password:pass},true);
+    saveSession(d);
+    toast('¡Bienvenido! 🔥','success');
+    render('lobby');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function doRegister() {
+  const username = document.getElementById('r-user').value.trim();
+  const email    = document.getElementById('r-email').value.trim();
+  const password = document.getElementById('r-pass').value;
+  const age      = parseInt(document.getElementById('r-age').value)||null;
+  const refCode  = document.getElementById('r-ref').value.trim();
+  if (!username||!email||!password) return toast('Completa los campos obligatorios','error');
+  if (password.length < 8) return toast('Contraseña mínimo 8 caracteres','error');
+  try {
+    const body = {username,email,password,age};
+    if (refCode) body.referralCode = refCode;
+    const d = await api('POST','/auth/register',body,true);
+    saveSession(d);
+    toast('¡Cuenta creada! +100 LLAMAS 🎉','success',5000);
+    render('lobby');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+function saveSession(d) {
+  _token = d.token; _user = d.user;
+  localStorage.setItem('bf_token',_token);
+  localStorage.setItem('bf_user',JSON.stringify(_user));
+}
+
+/* ══════════════ LOBBY ══════════════ */
+async function lobbyPage(root) {
+  let balance = 0;
+  try { const b = await api('GET','/llamas/balance'); balance=b.balance??0; } catch(_){}
+  root.innerHTML = `
+  <div class="header">
+    <div class="logo" style="font-size:20px">BattleFlirt🔥</div>
+    <div class="llamas-chip">🦙 ${balance}</div>
+  </div>
+  <div class="page">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <div class="avatar" style="width:44px;height:44px;font-size:18px">${(_user?.username||'?')[0].toUpperCase()}</div>
+      <div><div style="font-weight:700">${escHtml(_user?.username||'?')}</div>
+        <div class="text-muted text-sm">Rango ${_user?.current_rank||1}</div></div>
+    </div>
+
+    <div class="card mb-4" style="margin-bottom:16px">
+      <h2 style="margin-bottom:12px">🎮 Crear sala</h2>
+      <div class="form-group"><label>Modo</label>
+        <select id="mode-sel">
+          <option value="botella">🍾 La Botella</option>
+          <option value="verdad_reto">🎯 Verdad o Reto</option>
+          <option value="battle_1v1">⚔️ Battle 1v1</option>
+          <option value="liga">🏆 Liga</option>
+          <option value="juicio">⚖️ El Juicio</option>
+          <option value="oscuro">🌑 Modo Oscuro (Premium)</option>
+          <option value="cartas">🃏 Cartas del Destino</option>
+          <option value="termometro">🌡️ Termómetro</option>
+          <option value="actores">🎭 Los Actores</option>
+          <option value="ultimo_pie">🦶 Último en Pie</option>
+          <option value="todo_nada">💎 Todo o Nada</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Máx. jugadores</label>
+        <select id="max-p"><option value="4">4</option><option value="6">6</option><option value="8" selected>8</option><option value="12">12</option></select>
+      </div>
+      <button class="btn btn-primary" onclick="createRoom()">Crear sala 🚀</button>
+    </div>
+
+    <div class="card mb-4" style="margin-bottom:16px">
+      <h2 style="margin-bottom:12px">🔑 Unirse a sala</h2>
+      <div class="flex gap-2">
+        <input id="join-code" placeholder="Código" style="flex:1;text-transform:uppercase" maxlength="10" onkeydown="if(event.key==='Enter')joinRoom()"/>
+        <button class="btn btn-secondary" style="width:auto;padding:12px 16px" onclick="joinRoom()">→</button>
+      </div>
+    </div>
+
+    <div class="grid-2 mb-4" style="margin-bottom:16px">
+      <button class="btn btn-secondary" onclick="render('arena',{})">🏟️ Arena</button>
+      <button class="btn btn-secondary" onclick="render('profile')">👤 Perfil</button>
+      <button class="btn btn-secondary" onclick="claimDaily()">🎁 Daily</button>
+      <button class="btn btn-secondary" onclick="render('premium')">⭐ Premium</button>
+    </div>
+  </div>`;
+}
+
+async function createRoom() {
+  const mode = document.getElementById('mode-sel').value;
+  const maxPlayers = parseInt(document.getElementById('max-p').value);
+  try {
+    const d = await api('POST','/rooms',{mode,maxPlayers});
+    _room = d.room ?? d;
+    toast('Sala creada: ' + _room.code,'success');
+    render('room',{roomId:_room.id});
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function joinRoom() {
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (!code) return toast('Ingresa el código','error');
+  try {
+    const r  = await api('GET','/rooms/'+code);
+    const rm = r.room ?? r;
+    await api('POST','/rooms/'+rm.id+'/join');
+    _room = rm;
+    toast('¡Unido! 🎉','success');
+    render('room',{roomId:rm.id});
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function claimDaily() {
+  try {
+    const d = await api('POST','/llamas/daily');
+    toast('+'+d.amount+' LLAMAS 🦙','success');
+    render('lobby');
+  } catch(e) { toast(e.message||'Ya reclamaste hoy','error'); }
+}
+
+/* ══════════════ ROOM ══════════════ */
+const MODE_LABELS={botella:'🍾 La Botella',verdad_reto:'🎯 Verdad o Reto',battle_1v1:'⚔️ Battle 1v1',liga:'🏆 Liga',juicio:'⚖️ El Juicio',oscuro:'🌑 Modo Oscuro',cartas:'🃏 Cartas del Destino',termometro:'🌡️ Termómetro',actores:'🎭 Los Actores',ultimo_pie:'🦶 Último en Pie',todo_nada:'💎 Todo o Nada'};
+
+async function roomPage(root, {roomId}) {
+  _gameState = {status:'waiting',currentChallenge:null,players:[],mode:'',roomId};
+  try {
+    const s = await api('GET','/rooms/'+roomId+'/state');
+    const rm = s.room ?? s;
+    _gameState.mode   = rm.mode||'';
+    _gameState.status = rm.status||'waiting';
+    if (!_room) _room = rm;
+  } catch(_){}
+  await loadPlayers(roomId);
+  drawRoom(root, roomId);
+  startPolling(roomId);
+}
+
+function drawRoom(root, roomId) {
+  const gs = _gameState;
+  const isHost = gs.players.length > 0 && gs.players[0].userId === (_user?.id);
+  const lbl = MODE_LABELS[gs.mode]||gs.mode;
+  root.innerHTML = `
+  <div class="header">
+    <button class="btn btn-secondary btn-sm" style="width:auto" onclick="leaveRoom('${roomId}')">← Salir</button>
+    <span style="font-weight:700">${lbl}</span>
+    <button class="btn btn-secondary btn-sm" style="width:auto" onclick="render('hilo',{roomId:'${roomId}'})">💬 Hilo</button>
+  </div>
+  <div class="page">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span class="badge badge-info">🔑 ${_room?.code||''}</span>
+      <span class="badge ${gs.status==='playing'?'badge-accent':'badge-success'}">${gs.status==='playing'?'🎮 En juego':'⏳ Esperando'}</span>
+    </div>
+    <div id="players-list" class="flex-col gap-2 mb-4" style="margin-bottom:14px"></div>
+    ${gs.status==='waiting' ? (isHost
+      ? `<button class="btn btn-primary" onclick="startGame('${roomId}')">▶ Iniciar juego</button>`
+      : `<div class="text-muted text-sm" style="text-align:center">Esperando al anfitrión...</div>`)
+      : ''}
+    <div id="game-area" style="margin-top:14px"></div>
+    ${gs.status==='playing' ? `
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-secondary" style="flex:1" onclick="signalInterest('${roomId}')">❤️ Me interesa</button>
+      <button class="btn btn-secondary" style="flex:1" onclick="render('arena',{roomId:'${roomId}'})">🏟️ Arena</button>
+    </div>
+    ${isHost ? `<button class="btn btn-secondary btn-sm w-full" style="margin-top:8px" onclick="endGame('${roomId}')">🏁 Terminar juego</button>` : ''}` : ''}
+  </div>`;
+  paintPlayers();
+  paintGameArea(roomId);
+}
+
+async function loadPlayers(roomId) {
+  try {
+    const d = await api('GET','/rooms/'+roomId+'/players');
+    _gameState.players = (d.players??d).map(p=>({userId:p.userId||p.user_id,username:p.username,score:p.score||0}));
+  } catch(_){}
+}
+
+function paintPlayers() {
+  const el = document.getElementById('players-list');
+  if (!el) return;
+  el.innerHTML = _gameState.players.map(p=>`
+    <div class="player-item">
+      <div class="avatar">${(p.username||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;font-size:13px;font-weight:600">${escHtml(p.username)}</div>
+      <div class="text-gold text-sm">🏆 ${p.score}</div>
+    </div>`).join('');
+}
+
+function paintGameArea(roomId) {
+  const el = document.getElementById('game-area');
+  if (!el || _gameState.status!=='playing') return;
+  const gs = _gameState;
+  if (gs.currentChallenge) { el.innerHTML = challengeHtml(roomId, gs.currentChallenge); return; }
+  const m = gs.mode;
+  const others = gs.players.filter(p=>p.userId!==(_user?.id));
+  if (m==='botella') {
+    el.innerHTML=`<div class="challenge-card"><div style="font-size:50px;margin:8px 0">${gs.bottle?'→ '+escHtml(gs.bottle):'🍾'}</div>
+      <p class="text-muted text-sm mb-4">Gira la botella para elegir</p>
+      <button class="btn btn-primary" onclick="gAction('${roomId}','spin_bottle',{})">Girar 🍾</button></div>`;
+  } else if (['verdad_reto','oscuro','cartas'].includes(m)) {
+    el.innerHTML=`<div class="challenge-card"><p class="text-muted text-sm mb-3">Elige tu desafío</p>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1" onclick="gAction('${roomId}','draw_challenge',{type:'truth'})">Verdad 🤔</button>
+        <button class="btn btn-primary" style="flex:1;background:var(--accent2)" onclick="gAction('${roomId}','draw_challenge',{type:'dare'})">Reto 🎯</button>
+      </div>
+      ${m==='oscuro'?`<button class="btn btn-secondary btn-sm" style="width:auto;margin:10px auto 0" onclick="gAction('${roomId}','draw_challenge',{type:'dark'})">🌑 Reto Oscuro</button>`:''}
+    </div>`;
+  } else if (m==='battle_1v1') {
+    el.innerHTML=`<div class="challenge-card"><h3 style="margin-bottom:10px">⚔️ Reta a alguien</h3>
+      ${others.map(p=>`<button class="btn btn-secondary mb-2" onclick="gAction('${roomId}','challenge_player',{targetUserId:'${p.userId}'})">⚔️ vs ${escHtml(p.username)}</button>`).join('')||'<p class="text-muted text-sm">Sólo tú estás aquí</p>'}
+    </div>`;
+  } else if (m==='juicio') {
+    el.innerHTML=`<div class="challenge-card"><h3 style="margin-bottom:8px">⚖️ El Juicio</h3>
+      <button class="btn btn-primary mb-3" onclick="gAction('${roomId}','draw_challenge',{type:'truth'})">Nueva pregunta ⚖️</button>
+      <p class="text-muted text-sm mb-2">Vota:</p>
+      ${others.map(p=>`<button class="btn btn-secondary mb-2" onclick="gAction('${roomId}','vote',{voteType:'juicio',targetUserId:'${p.userId}'})">👆 ${escHtml(p.username)}</button>`).join('')}
+    </div>`;
+  } else if (m==='actores') {
+    el.innerHTML=`<div class="challenge-card"><h3 style="margin-bottom:8px">🎭 Los Actores</h3>
+      <button class="btn btn-primary mb-2" onclick="gAction('${roomId}','assign_roles',{})">Asignar roles 🎭</button>
+      <div id="my-role" class="text-sm text-muted mt-2"></div></div>`;
+  } else if (m==='ultimo_pie') {
+    el.innerHTML=`<div class="challenge-card"><h3 style="margin-bottom:8px">🦶 Último en Pie</h3>
+      <button class="btn btn-primary mb-2" onclick="gAction('${roomId}','draw_challenge',{type:'dare'})">Siguiente reto 🎯</button>
+      <button class="btn btn-secondary btn-sm" style="width:auto;margin:8px auto 0" onclick="gAction('${roomId}','player_failed',{userId:'${_user?.id}'})">🏳️ Me rindo</button></div>`;
+  } else if (m==='todo_nada') {
+    el.innerHTML=`<div class="challenge-card"><h3 style="margin-bottom:8px">💎 Todo o Nada</h3>
+      <div class="form-group"><input id="bet-amt" type="number" min="10" max="500" placeholder="LLAMAS a apostar"/></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1" onclick="placeBet('${roomId}','todo')">Todo 💎</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="placeBet('${roomId}','nada')">Nada 🏳️</button>
+      </div></div>`;
+  } else {
+    el.innerHTML=`<button class="btn btn-primary" onclick="gAction('${roomId}','draw_challenge',{type:'truth'})">Siguiente reto 🎯</button>`;
+  }
+}
+
+function challengeHtml(roomId, ch) {
+  const cols={truth:'var(--info)',dare:'var(--accent2)',dark:'#c0392b',battle:'var(--accent)'};
+  const c = cols[ch.type]||'var(--accent)';
+  const typeLabel={truth:'🤔 Verdad',dare:'🎯 Reto',dark:'🌑 Oscuro',battle:'⚔️ Battle'};
+  return `<div class="challenge-card" style="border-color:${c}40">
+    <div class="badge" style="background:${c}20;color:${c};border:1px solid ${c}40;margin-bottom:10px">${typeLabel[ch.type]||ch.type}${ch.intensity?' · Nivel '+ch.intensity:''}</div>
+    ${ch.targetUsername?`<div class="text-sm text-muted mb-2">Para: <b>${escHtml(ch.targetUsername)}</b></div>`:''}
+    <div class="challenge-text">${escHtml(ch.text)}</div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-primary" style="flex:1" onclick="gAction('${roomId}','challenge_completed',{challengeId:'${ch.id||''}'})">✅ Hecho</button>
+      <button class="btn btn-secondary" style="flex:1" onclick="gAction('${roomId}','challenge_skipped',{challengeId:'${ch.id||''}'})">⏭️ Saltar</button>
+    </div></div>`;
+}
+
+async function gAction(roomId, action, data) {
+  try {
+    const d = await api('POST','/game/'+roomId+'/action',{action,...data});
+    handleEvents(Array.isArray(d)?d:(d.events||[d]));
+  } catch(e) { toast(e.message,'error'); }
+}
+
+function handleEvents(evs) {
+  for (const e of evs||[]) {
+    if (!e||!e.event_type) continue;
+    const p = typeof e.payload==='string' ? JSON.parse(e.payload||'{}') : (e.payload||{});
+    switch(e.event_type) {
+      case 'game:start':
+        _gameState.status='playing';
+        toast('¡Juego iniciado! 🎮','success');
+        drawRoom(document.getElementById('root'), _gameState.roomId);
+        break;
+      case 'game:challenge':
+        _gameState.currentChallenge = p.challenge||p;
+        paintGameArea(_gameState.roomId);
+        break;
+      case 'game:challenge_completed':
+      case 'game:challenge_skipped':
+        _gameState.currentChallenge = null;
+        if (p.llamasDelta) toast((p.llamasDelta>0?'+':'')+p.llamasDelta+' LLAMAS 🦙','info');
+        paintGameArea(_gameState.roomId);
+        break;
+      case 'game:bottle_spin':
+        _gameState.bottle = p.targetUsername;
+        paintGameArea(_gameState.roomId);
+        break;
+      case 'game:roles_assigned':
+        const myRole = (p.roles||{})[_user?.id];
+        if (myRole) {
+          const el = document.getElementById('my-role');
+          if (el) el.innerHTML = `<div class="badge badge-accent">Tu rol: ${escHtml(myRole)} 🎭</div>`;
+        }
+        break;
+      case 'room:match_reveal':
+        toast('💘 ¡Match con '+escHtml(p.targetUsername||'alguien')+'!','success',6000);
+        break;
+      case 'game:end':
+        _gameState.status='finished';
+        break;
+    }
+  }
+}
+
+async function startGame(roomId) {
+  await gAction(roomId,'game_start',{});
+}
+
+async function endGame(roomId) {
+  try {
+    const d = await api('POST','/rooms/'+roomId+'/end');
+    if ((d.matches||[]).length) toast('💘 '+(d.matches.length)+' match(es) revelado(s)!','success',5000);
+    toast('Juego terminado 🏁','info');
+    stopPolling();
+    render('lobby');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function leaveRoom(roomId) {
+  try { await api('POST','/rooms/'+roomId+'/leave'); } catch(_){}
+  stopPolling();
+  render('lobby');
+}
+
+async function signalInterest(roomId) {
+  try { await api('POST','/rooms/'+roomId+'/interest'); toast('❤️ Interés registrado (privado)','info'); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+async function placeBet(roomId, choice) {
+  const amt = parseInt(document.getElementById('bet-amt')?.value)||0;
+  if (amt<10) return toast('Mínimo 10 LLAMAS','error');
+  await gAction(roomId,'todo_nada_bet',{amount:amt,choice});
+  toast('Apuesta '+choice+': '+amt+' LLAMAS 💎','info');
+}
+
+function startPolling(roomId) {
+  _lastEventId=0;
+  _pollTimer = setInterval(async()=>{
+    try {
+      const d = await api('GET','/game/'+roomId+'/events?since='+_lastEventId);
+      const evs = d.events??d;
+      if (evs.length) {
+        _lastEventId = evs[evs.length-1].id||_lastEventId;
+        handleEvents(evs);
+        await loadPlayers(roomId);
+        paintPlayers();
+      }
+    } catch(_){}
+  }, 2000);
+}
+
+/* ══════════════ HILO ══════════════ */
+async function hiloPage(root, {roomId}) {
+  root.innerHTML = `
+  <div class="header">
+    <button class="btn btn-secondary btn-sm" style="width:auto" onclick="render('room',{roomId:'${roomId}'})">← Sala</button>
+    <span style="font-weight:700">💬 El Hilo</span>
+    <div id="t-badge" class="badge badge-info">⚡ 0</div>
+  </div>
+  <div style="display:flex;flex-direction:column;height:calc(100vh - 60px)">
+    <div style="padding:8px 16px;border-bottom:1px solid var(--border)">
+      <div class="tension-wrap"><div id="t-bar" class="tension-bar" style="width:0%;background:var(--info)"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:5px">
+        <span id="t-name" class="text-xs text-muted">Nivel 1 - Frío</span>
+        <span id="t-num" class="text-xs text-muted">0/100</span>
+      </div>
+    </div>
+    <div id="hilo-msgs" class="chat-area"></div>
+    <div style="padding:10px 14px;border-top:1px solid var(--border);background:var(--bg2)">
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <select id="msg-type" style="flex:0 0 130px;font-size:12px;padding:10px 8px">
+          <option value="directo">💬 Directo</option>
+          <option value="anonimo">🎭 Anónimo</option>
+          <option value="secreto">🔒 Secreto (P)</option>
+          <option value="ardiente">🔥 Ardiente (P)</option>
+        </select>
+        <input id="msg-in" placeholder="Mensaje..." style="flex:1" onkeydown="if(event.key==='Enter')sendMsg('${roomId}')"/>
+        <button class="btn btn-primary" style="width:auto;padding:10px 14px;flex-shrink:0" onclick="sendMsg('${roomId}')">➤</button>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-secondary btn-sm" style="flex:1" onclick="openConf('${roomId}')">💋 Confesión</button>
+        <button class="btn btn-secondary btn-sm" style="flex:1" onclick="quickReact('${roomId}')">😄 Reaccionar</button>
+      </div>
+    </div>
+  </div>`;
+  loadHilo(roomId);
+  _hiloTimer = setInterval(()=>loadHilo(roomId), 3000);
+}
+
+async function loadHilo(roomId) {
+  try {
+    const d = await api('GET','/hilo/'+roomId+'/messages?since='+_hiloLastSeq);
+    const msgs = d.messages||[];
+    setTension(d.tension??0, d.level??{});
+    if (msgs.length) {
+      _hiloLastSeq = msgs[msgs.length-1].seq||_hiloLastSeq;
+      appendMsgs(msgs);
+    }
+  } catch(_){}
+}
+
+function setTension(t, lvl) {
+  const bar=document.getElementById('t-bar'), name=document.getElementById('t-name'), num=document.getElementById('t-num'), bdg=document.getElementById('t-badge');
+  if (!bar) return;
+  const colors={1:'var(--info)',2:'var(--success)',3:'var(--warn)',4:'var(--accent)',5:'#7f1d1d'};
+  bar.style.width=t+'%'; bar.style.background=colors[lvl.level||1]||'var(--info)';
+  if(name) name.textContent='Nivel '+(lvl.level||1)+' - '+(lvl.name||'Frío');
+  if(num)  num.textContent=t+'/100';
+  if(bdg)  bdg.textContent='⚡ '+t;
+}
+
+function appendMsgs(msgs) {
+  const c = document.getElementById('hilo-msgs');
+  if (!c) return;
+  for (const m of msgs) {
+    const div=document.createElement('div');
+    div.className='chat-msg other'; div.dataset.mid=m.id;
+    const rxns=(m.reactions||[]).map(r=>`<span class="reaction-pill">${r.reaction} ${r.count}</span>`).join('');
+    div.innerHTML=`<div class="sender">${escHtml(m.username||'Anon')}</div><div class="text">${escHtml(m.content)}</div>${rxns?`<div class="reactions">${rxns}</div>`:''}<div class="text-xs text-muted mt-2" style="cursor:pointer" onclick="addReact('${m.id}')">+ reaccionar</div>`;
+    c.appendChild(div);
+  }
+  c.scrollTop=c.scrollHeight;
+}
+
+async function sendMsg(roomId) {
+  const inp=document.getElementById('msg-in');
+  const type=document.getElementById('msg-type').value;
+  const content=inp?.value.trim();
+  if (!content) return;
+  try {
+    const d=await api('POST','/hilo/'+roomId+'/messages',{content,type,anonymous:type==='anonimo'});
+    inp.value='';
+    if(d.message) appendMsgs([d.message]);
+    setTension(d.tension, d.level||{});
+    if(d.leveledUp) toast('🔥 ¡Subiste de nivel de tensión!','success');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+function openConf(roomId) {
+  const t=prompt('💋 Tu confesión (requiere nivel 4+):');
+  if(!t) return;
+  api('POST','/hilo/'+roomId+'/confession',{text:t,anonymous:true})
+    .then(d=>{ toast('💋 Confesión enviada! +10 carisma','success'); if(d.message)appendMsgs([d.message]); })
+    .catch(e=>toast(e.message,'error'));
+}
+
+function addReact(msgId) {
+  const emojis=['❤️','😂','😮','🔥','💋','👀','😍','🤔','🫣','💀'];
+  const em=emojis[Math.floor(Math.random()*emojis.length)];
+  // get roomId from current hilo context
+  const backBtn = document.querySelector('.header .btn-secondary');
+  const href = backBtn?.getAttribute('onclick')||'';
+  const m = href.match(/roomId:'([^']+)'/);
+  if (!m) return;
+  api('POST','/hilo/'+m[1]+'/react',{messageId:msgId,reaction:em})
+    .then(()=>toast('Reacción '+em,'info')).catch(e=>toast(e.message,'error'));
+}
+
+function quickReact(roomId) {
+  const msgs=document.querySelectorAll('.chat-msg[data-mid]');
+  if(!msgs.length) return toast('No hay mensajes aún','info');
+  const last=msgs[msgs.length-1];
+  if(last) addReact(last.dataset.mid);
+}
+
+/* ══════════════ ARENA ══════════════ */
+const ARENA_FEATS=[
+  {id:'silla_caliente',icon:'🪑',name:'Silla Caliente',desc:'2 min de preguntas'},
+  {id:'sobre_rojo',icon:'💌',name:'Sobre Rojo',desc:'Premium · -30🦙'},
+  {id:'quien_curso',icon:'🎓',name:'¿Quién en tu Curso?',desc:'Vota a tus compas'},
+  {id:'termometro',icon:'🌡️',name:'Termómetro',desc:'Temp del grupo'},
+  {id:'momento_epico',icon:'🏆',name:'Momento Épico',desc:'Nomina el mejor'},
+  {id:'ruleta',icon:'🎰',name:'Ruleta Maldita',desc:'Giro con consecuencias'},
+  {id:'shipper',icon:'💘',name:'Shipper',desc:'Vota el mejor ship'},
+  {id:'corona_semanal',icon:'👑',name:'Corona Semanal',desc:'Top 3 semanal'},
+  {id:'estadio',icon:'🏟️',name:'Estadio',desc:'Sala pública'},
+];
+
+async function arenaPage(root, {roomId}) {
+  let corona=null;
+  try { corona=await api('GET','/arena/corona'); } catch(_){}
+  root.innerHTML=`
+  <div class="header">
+    <button class="btn btn-secondary btn-sm" style="width:auto" onclick="${roomId?`render('room',{roomId:'${roomId}'})`:`render('lobby')`}">← Atrás</button>
+    <span style="font-weight:700">🏟️ Arena</span><div></div>
+  </div>
+  <div class="page">
+    ${corona&&(corona.top3||[]).length?`
+    <div class="card mb-4" style="margin-bottom:16px;border-color:var(--gold)40">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:20px">👑</span><h3 class="text-gold">Corona Semanal</h3></div>
+      ${(corona.top3||[]).map((u,i)=>`<div class="player-item mb-2">
+        <div class="avatar">${['🥇','🥈','🥉'][i]||'#'+(i+1)}</div>
+        <div style="flex:1">${escHtml(u.username)}</div>
+        <div class="text-gold text-sm">${u.weeklyPoints} pts</div>
+      </div>`).join('')}
+    </div>`:''}
+    <div class="arena-grid">
+      ${ARENA_FEATS.map(f=>`<div class="arena-feature" onclick="launchFeature('${roomId||''}','${f.id}')">
+        <div class="icon">${f.icon}</div>
+        <div style="font-size:12px;font-weight:600">${f.name}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${f.desc}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+async function launchFeature(roomId, feature) {
+  if (feature==='ruleta') {
+    try {
+      const d=await api('GET','/arena/ruleta');
+      const r=d.result||d;
+      toast('🎰 '+r.label, r.llamasDelta<0?'error':r.llamasDelta>0?'success':'info', 5000);
+    } catch(e) { toast(e.message,'error'); }
+    return;
+  }
+  if (feature==='corona_semanal') {
+    try {
+      const d=await api('GET','/arena/corona');
+      const top=(d.top3||[]).map((u,i)=>`${['🥇','🥈','🥉'][i]} ${u.username}: ${u.weeklyPoints} pts`).join('\n');
+      alert('👑 Corona Semanal\n\n'+(top||'Sin datos esta semana'));
+    } catch(e) { toast(e.message,'error'); }
+    return;
+  }
+  if (!roomId) return toast('Únete a una sala primero','error');
+  try {
+    const d=await api('POST','/arena/'+roomId+'/start',{feature});
+    const stadId=d.stadiumId||d.stadium_id||d.id;
+    toast('🏟️ '+feature+' iniciado!','success');
+    renderArenaFeature(document.getElementById('root'), roomId, feature, stadId);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+function renderArenaFeature(root, roomId, feature, stadId) {
+  const fi=ARENA_FEATS.find(f=>f.id===feature)||{icon:'🏟️',name:feature};
+  const others=_gameState.players.filter(p=>p.userId!==(_user?.id));
+  let content='';
+  if (feature==='silla_caliente') {
+    content=`<h3 style="margin-bottom:10px">🪑 ¿Quién se sienta en la silla?</h3>
+      ${others.map(p=>`<button class="btn btn-secondary mb-2" onclick="arAct('${roomId}','${stadId}','silla_start',{targetUserId:'${p.userId}'})">🪑 ${escHtml(p.username)}</button>`).join('')}
+      <button class="btn btn-primary mt-2" onclick="getArenaResults('${roomId}','${stadId}')">Ver resultados</button>`;
+  } else if (feature==='sobre_rojo') {
+    content=`<h3 style="margin-bottom:10px">💌 Sobre Rojo (−30 LLAMAS)</h3>
+      <div class="form-group"><textarea id="sobre-q" placeholder="Tu pregunta anónima..." rows="3"></textarea></div>
+      <select id="sobre-to" style="margin-bottom:10px">${others.map(p=>`<option value="${p.userId}">${escHtml(p.username)}</option>`).join('')}</select>
+      <button class="btn btn-primary" onclick="sendSobre('${roomId}','${stadId}')">Enviar 💌</button>`;
+  } else if (feature==='momento_epico') {
+    content=`<h3 style="margin-bottom:10px">🏆 Momento Épico</h3>
+      <div class="form-group"><textarea id="epic-d" placeholder="Describe el momento épico..." rows="3"></textarea></div>
+      <button class="btn btn-primary mb-2" onclick="nomEpic('${roomId}','${stadId}')">Nominar 🏆</button>
+      <div id="epic-votes" class="mt-2">
+        ${others.map(p=>`<button class="btn btn-secondary btn-sm mb-2" onclick="arVote('${roomId}','${stadId}','epic_vote',{targetId:'${p.userId}'})">👆 Votar por momento de ${escHtml(p.username)}</button>`).join('')}
+      </div>`;
+  } else if (feature==='shipper') {
+    content=`<h3 style="margin-bottom:10px">💘 Mejor Ship</h3>
+      <label class="text-sm text-muted mb-2">Persona A:</label>
+      <select id="ship-a" style="margin-bottom:8px">${others.map(p=>`<option value="${p.userId}">${escHtml(p.username)}</option>`).join('')}</select>
+      <label class="text-sm text-muted mb-2">Persona B:</label>
+      <select id="ship-b" style="margin-bottom:12px">${others.map((p,i)=>`<option value="${p.userId}" ${i===1?'selected':''}>${escHtml(p.username)}</option>`).join('')}</select>
+      <button class="btn btn-primary" onclick="voteShip('${roomId}','${stadId}')">Votar 💘</button>`;
+  } else if (feature==='quien_curso') {
+    content=`<h3 style="margin-bottom:10px">🎓 ¿Quién en tu curso...?</h3>
+      <button class="btn btn-primary mb-3" onclick="arAct('${roomId}','${stadId}','quien_draw',{})">Nueva pregunta 🎓</button>
+      <div id="quien-q" class="challenge-text text-muted text-sm"></div>
+      ${others.map(p=>`<button class="btn btn-secondary mb-2 mt-2" onclick="arVote('${roomId}','${stadId}','quien_vote',{targetId:'${p.userId}'})">👆 ${escHtml(p.username)}</button>`).join('')}`;
+  } else if (feature==='termometro') {
+    content=`<h3 style="margin-bottom:10px">🌡️ Termómetro del Grupo</h3>
+      <button class="btn btn-primary mb-3" onclick="arAct('${roomId}','${stadId}','thermo_question',{})">Nueva pregunta 🌡️</button>
+      <div id="thermo-q" class="challenge-text text-muted text-sm"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        ${others.map(p=>`<button class="btn btn-secondary btn-sm" style="flex:1" onclick="arVote('${roomId}','${stadId}','thermo_vote',{targetId:'${p.userId}'})">🌡️ ${escHtml(p.username)}</button>`).join('')}
+      </div>`;
+  } else {
+    content=`<button class="btn btn-primary" onclick="arAct('${roomId}','${stadId}','action',{})">Siguiente ▶</button>`;
+  }
+
+  root.innerHTML=`
+  <div class="header">
+    <button class="btn btn-secondary btn-sm" style="width:auto" onclick="render('arena',{roomId:'${roomId}'})">← Arena</button>
+    <span style="font-weight:700">${fi.icon} ${fi.name}</span>
+    <button class="btn btn-secondary btn-sm" style="width:auto" onclick="endArena('${roomId}','${stadId}')">Fin</button>
+  </div>
+  <div class="page"><div class="card">${content}</div>
+  <div id="arena-res" class="mt-4"></div></div>`;
+}
+
+async function arAct(roomId, stadId, action, data) {
+  try {
+    const d=await api('POST','/arena/'+roomId+'/action',{action,stadiumId:stadId,...data});
+    showARes(d);
+    // Update question display if relevant
+    if (d.question||d.challenge) {
+      const q=document.getElementById('quien-q')||document.getElementById('thermo-q');
+      if(q) q.textContent=(d.question||d.challenge?.text||'');
+    }
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function arVote(roomId, stadId, voteType, data) {
+  try {
+    const d=await api('POST','/arena/'+roomId+'/vote',{voteType,stadiumId:stadId,...data});
+    toast('Voto registrado ✅','success');
+    showARes(d);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function sendSobre(roomId, stadId) {
+  const q=document.getElementById('sobre-q')?.value.trim();
+  const t=document.getElementById('sobre-to')?.value;
+  if (!q) return toast('Escribe la pregunta','error');
+  await arAct(roomId,stadId,'sobre_send',{targetUserId:t,question:q});
+  toast('💌 Sobre enviado (−30 LLAMAS)','info');
+}
+
+async function nomEpic(roomId, stadId) {
+  const d=document.getElementById('epic-d')?.value.trim();
+  if (!d) return toast('Describe el momento','error');
+  await arAct(roomId,stadId,'epic_nominate',{description:d});
+  toast('🏆 Nominación enviada','success');
+}
+
+async function voteShip(roomId, stadId) {
+  const a=document.getElementById('ship-a')?.value;
+  const b=document.getElementById('ship-b')?.value;
+  if (!a||!b||a===b) return toast('Elige 2 personas diferentes','error');
+  try {
+    const d=await api('POST','/arena/'+roomId+'/vote',{voteType:'ship',stadiumId:stadId,targetIds:[a,b]});
+    toast('💘 Ship votado','success'); showARes(d);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function getArenaResults(roomId, stadId) {
+  try {
+    const d=await api('GET','/arena/'+roomId+'/results?stadiumId='+stadId);
+    showARes(d);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function endArena(roomId, stadId) {
+  try {
+    const d=await api('POST','/arena/'+roomId+'/end',{stadiumId:stadId});
+    showARes(d.results||d); toast('Arena terminada 🏟️','info');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+function showARes(d) {
+  const el=document.getElementById('arena-res');
+  if (!el||!d) return;
+  el.innerHTML=`<div class="card"><pre style="font-size:11px;overflow-x:auto;color:var(--text2);white-space:pre-wrap">${JSON.stringify(d,null,2)}</pre></div>`;
+}
+
+/* ══════════════ PROFILE ══════════════ */
+async function profilePage(root) {
+  root.innerHTML=`<div class="loading">⏳ Cargando...</div>`;
+  try {
+    const [profile,charisma,badges,llamas,refs] = await Promise.all([
+      api('GET','/users/me/profile'),
+      api('GET','/users/me/charisma'),
+      api('GET','/users/me/badges'),
+      api('GET','/llamas/balance'),
+      api('GET','/referrals/code').catch(()=>null),
+    ]);
+    const p=profile.profile||profile;
+    const c=charisma.charisma||charisma;
+    const bs=(badges.badges||badges)||[];
+    const bal=llamas.balance??0;
+    const prog=c.progressToNext||{};
+
+    root.innerHTML=`
+    <div class="header">
+      <button class="btn btn-secondary btn-sm" style="width:auto" onclick="render('lobby')">← Inicio</button>
+      <span style="font-weight:700">👤 Perfil</span>
+      <button class="btn btn-secondary btn-sm" style="width:auto" onclick="logout()">Salir</button>
+    </div>
+    <div class="page">
+      <div class="card" style="text-align:center;margin-bottom:16px">
+        <div class="avatar" style="width:60px;height:60px;font-size:26px;margin:0 auto 10px">${(p.username||'?')[0].toUpperCase()}</div>
+        <h2>${escHtml(p.username)}</h2>
+        <div class="text-muted text-sm">${escHtml(p.email||'')}</div>
+        ${p.isPremium?'<div class="badge badge-gold mt-2">⭐ Premium</div>':''}
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px">
+          <div style="background:var(--bg3);border-radius:8px;padding:10px">
+            <div class="text-gold" style="font-size:18px;font-weight:800">${bal}</div>
+            <div class="text-xs text-muted">LLAMAS</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:10px">
+            <div style="font-size:18px;font-weight:800">${c.totalPoints||0}</div>
+            <div class="text-xs text-muted">Carisma</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:10px">
+            <div class="text-accent" style="font-size:16px;font-weight:800">${c.rank?.name||'Spark'}</div>
+            <div class="text-xs text-muted">Rango</div>
+          </div>
+        </div>
+      </div>
+
+      ${prog.pointsNeeded?`
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+          <span>${c.rank?.name||'Spark'}</span><span>${c.rank?.next||''}</span>
+        </div>
+        <div class="tension-wrap"><div class="tension-bar" style="width:${prog.pct||0}%;background:var(--accent)"></div></div>
+        <div class="text-xs text-muted mt-2 text-right">${prog.pointsNeeded} pts para subir</div>
+      </div>`:''}
+
+      ${refs?`
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-bottom:8px">🔗 Código de referido</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <code style="background:var(--bg3);padding:8px 12px;border-radius:6px;flex:1;font-size:13px">${escHtml(refs.code||'')}</code>
+          <button class="btn btn-secondary btn-sm" style="width:auto" onclick="navigator.clipboard.writeText('${refs.code||''}').then(()=>toast('¡Copiado!','success'))">Copiar</button>
+        </div>
+        <div class="text-sm text-muted mt-2">👥 ${refs.totalReferred||0} referidos · 🦙 ${refs.llamasEarned||0} ganadas</div>
+      </div>`:''}
+
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-bottom:10px">🏅 Insignias (${bs.length})</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${bs.length?bs.map(b=>`<div class="badge badge-accent">${bEmoji(b.badge_type)} ${b.badge_type.replace(/_/g,' ')}</div>`).join(''):'<div class="text-muted text-sm">Aún sin insignias</div>'}
+        </div>
+      </div>
+
+      <button class="btn btn-secondary w-full" onclick="render('premium')">${p.isPremium?'⭐ Gestionar Premium':'⭐ Obtener Premium'}</button>
+    </div>`;
+  } catch(e) { root.innerHTML=`<div class="loading text-accent">Error: ${e.message}</div>`; }
+}
+
+function bEmoji(t){const m={first_match:'💘',ten_games:'🎮',dark_unlocked:'🌑',llamas_millionaire:'🦙',rank_legend:'👑',weekly_crown:'🏆',epic_moment:'⚡',premium_member:'⭐',beta_tester:'🧪'};return m[t]||'🏅';}
+function logout(){_token='';_user=null;_room=null;localStorage.removeItem('bf_token');localStorage.removeItem('bf_user');render('auth');}
+
+/* ══════════════ PREMIUM ══════════════ */
+async function premiumPage(root) {
+  let st=null;
+  try { st=await api('GET','/payments/status'); } catch(_){}
+  root.innerHTML=`
+  <div class="header">
+    <button class="btn btn-secondary btn-sm" style="width:auto" onclick="render('profile')">← Perfil</button>
+    <span style="font-weight:700">⭐ Premium</span><div></div>
+  </div>
+  <div class="page">
+    ${st?.active?`
+    <div class="card" style="border-color:var(--gold)40;text-align:center;margin-bottom:18px">
+      <div style="font-size:40px;margin-bottom:8px">⭐</div>
+      <h2 class="text-gold">Premium Activo</h2>
+      <div class="text-muted text-sm mt-2">Expira: ${st.expiresAt?new Date(st.expiresAt).toLocaleDateString('es'):'—'}</div>
+      <button class="btn btn-secondary mt-4 btn-sm" style="width:auto;margin:14px auto 0" onclick="cancelPrem()">Cancelar suscripción</button>
+    </div>`:`
+    <div class="card" style="text-align:center;margin-bottom:18px;background:linear-gradient(135deg,var(--bg2),var(--bg3))">
+      <div style="font-size:48px;margin-bottom:10px">⭐</div>
+      <h2>BattleFlirt Premium</h2>
+      <div class="text-gold" style="font-size:22px;font-weight:800;margin:8px 0">$4.99 / mes</div>
+      <div style="text-align:left;margin-bottom:18px">
+        ${['🌑 Modo Oscuro (18+)','💌 Sobre Rojo anónimo','🔒 Hilo Secreto','🔥 Mensajes Ardientes','⭐ +200 LLAMAS de bienvenida','🏅 Badge exclusivo Premium'].map(f=>`<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span>✅</span><span class="text-sm">${f}</span></div>`).join('')}
+      </div>
+      <button class="btn btn-gold w-full" onclick="doPremium()">Obtener Premium ⭐</button>
+    </div>`}
+    <div class="card">
+      <h3 style="margin-bottom:10px">🧪 Beta Code</h3>
+      <div style="display:flex;gap:8px">
+        <input id="bcode" placeholder="BETA-XXXXXXXX" style="flex:1"/>
+        <button class="btn btn-secondary" style="width:auto;padding:10px 14px" onclick="redeemBeta()">Canjear</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function doPremium() {
+  try {
+    const d=await api('POST','/payments/create-subscription',{});
+    if(d.alreadyPremium) return toast('Ya tienes Premium','info');
+    if(d.checkoutUrl) window.location.href=d.checkoutUrl;
+    else toast('Stripe no configurado aún — contacta al admin','error');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function cancelPrem() {
+  if(!confirm('¿Cancelar? Mantendrás el acceso hasta fin del período.')) return;
+  try { await api('POST','/payments/cancel',{}); toast('Cancelado','info'); render('premium'); }
+  catch(e) { toast(e.message,'error'); }
+}
+
+async function redeemBeta() {
+  const c=document.getElementById('bcode')?.value.trim();
+  if(!c) return toast('Ingresa el código','error');
+  try {
+    const d=await api('POST','/beta/redeem',{code:c});
+    toast(d.message||'¡Canjeado!','success',5000);
+    render('premium');
+  } catch(e) { toast(e.message,'error'); }
+}
+
+/* ══════════════ BOOT ══════════════ */
+(function boot(){
+  const p=new URLSearchParams(location.search);
+  if(p.get('premium')==='success') { toast('¡Pago exitoso! Premium activo 🎉','success',6000); history.replaceState({},'','/'); }
+  const ref=p.get('ref');
+  if(ref&&_token&&_user) {
+    api('POST','/referrals/apply',{code:ref}).then(()=>toast('+50 LLAMAS por referido!','success')).catch(()=>{});
+    history.replaceState({},'','/');
+  }
+  if(_token&&_user) {
+    render('lobby');
+    api('GET','/auth/me').catch(()=>{ _token=''; localStorage.removeItem('bf_token'); render('auth'); });
+  } else { render('auth'); }
+})();
+</script>
+</body>
 </html>

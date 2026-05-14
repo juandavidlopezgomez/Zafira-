@@ -1,7 +1,7 @@
 <?php
 namespace BF\Controllers;
 
-use BF\{Database, Auth, Response, Llamas, Charisma, Challenges, Interest, Badges};
+use BF\{Database, Auth, Response, Llamas, Charisma, Challenges, Interest, Badges, Referrals};
 
 /**
  * Maneja todos los eventos de juego vía POST /api/game/{roomId}/action
@@ -156,6 +156,8 @@ class GameController {
         // Premiar bono diario al host (1ra partida del día) y carisma por hostear
         Llamas::awardDailyIfNeeded($db, $userId);
         Charisma::award($db, $userId, Charisma::A_HOST_GAME, Charisma::R_HOST_GAME);
+        // Premiar al referidor si este es el primer juego del usuario
+        Referrals::rewardReferrerOnFirstGame($db, $userId);
 
         $mode = self::getMode($db, $roomId);
         $db->prepare('UPDATE rooms SET status = ?, started_at = NOW() WHERE id = ?')
