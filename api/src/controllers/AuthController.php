@@ -51,11 +51,13 @@ class AuthController {
 
         Response::ok([
             ...$tokens,
-            'user' => [
+            'token' => $tokens['accessToken'], // alias for compatibility
+            'user'  => [
                 'id'            => $id,
                 'username'      => $username,
                 'email'         => $email,
                 'isPremium'     => false,
+                'current_rank'  => 1,
                 'llamasBalance' => LLAMAS_INITIAL_BALANCE,
             ],
         ]);
@@ -82,11 +84,13 @@ class AuthController {
 
         Response::ok([
             ...$tokens,
-            'user' => [
+            'token' => $tokens['accessToken'], // alias for compatibility
+            'user'  => [
                 'id'            => $user['id'],
                 'username'      => $user['username'],
                 'email'         => $user['email'],
                 'isPremium'     => (bool)$user['is_premium'],
+                'current_rank'  => (int)($user['current_rank'] ?? 1),
                 'llamasBalance' => $balance,
             ],
         ]);

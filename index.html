@@ -213,7 +213,7 @@ async function doRegister() {
 }
 
 function saveSession(d) {
-  _token = d.token; _user = d.user;
+  _token = d.accessToken || d.token; _user = d.user;
   localStorage.setItem('bf_token',_token);
   localStorage.setItem('bf_user',JSON.stringify(_user));
 }
