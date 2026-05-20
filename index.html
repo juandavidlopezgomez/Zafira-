@@ -395,7 +395,8 @@ function drawRoom(root,roomId){
 
 async function loadPlayers(roomId){
   try{const d=await req('GET','/rooms/'+roomId+'/players');
-    _gs.players=(d.players??d).map(p=>({userId:p.userId||p.user_id,username:p.username,score:p.score||0}));}
+    const arr=Array.isArray(d)?d:(d.players??d);
+    _gs.players=arr.map(p=>({userId:p.id||p.userId||p.user_id,username:p.username,score:p.score||0}));}
   catch(_){}
 }
 
@@ -487,16 +488,47 @@ function chalHtml(roomId,ch){
 }
 
 async function ga(roomId,action,data){
-  try{const d=await req('POST','/game/'+roomId+'/action',{action,...data});
-    handleEvs(Array.isArray(d)?d:(d.events||[d]));}
+  const mode=_gs?.mode||'';
+  let event=action;
+  let payload={...(data||{})};
+  // Map frontend action names → backend event names
+  if(action==='game_start')             event='game:start';
+  else if(action==='spin_bottle')       event='bottle:spin';
+  else if(action==='challenge_completed')event='truth_dare:complete';
+  else if(action==='challenge_skipped') event='truth_dare:skip';
+  else if(action==='assign_roles')      event='actores:assign_roles';
+  else if(action==='challenge_player')  event='battle_1v1:start';
+  else if(action==='player_failed')     {event='ultimo_pie:vote';payload.type='fail';}
+  else if(action==='todo_nada_bet')     event='todo_nada:start';
+  else if(action==='draw_challenge'){
+    const t=data?.type||'truth';
+    if(mode==='verdad_reto'||mode==='cartas'){event='truth_dare:choose';payload.choice=t;}
+    else if(mode==='oscuro')    event='oscuro:get_challenge';
+    else if(mode==='termometro')event='termometro:start';
+    else if(mode==='ultimo_pie')event='ultimo_pie:start';
+    else if(mode==='liga')      event='liga:next_round';
+    else if(mode==='juicio')    event='juicio:start';
+    else{event='truth_dare:choose';payload.choice=t;}
+  }
+  else if(action==='vote'){
+    const vt=data?.voteType||'';
+    if(vt==='juicio')event='juicio:vote';
+    else if(vt==='liga')event='liga:vote';
+    else if(vt==='actores')event='actores:vote_best';
+    else event='truth_dare:vote';
+  }
+  try{const d=await req('POST','/game/'+roomId+'/action',{event,payload});
+    if(d&&d.events)handleEvs(d.events);}
   catch(er){toast(er.message,'e');}
 }
 
 function handleEvs(evs){
   for(const e of evs||[]){
-    if(!e||!e.event_type)continue;
+    if(!e)continue;
+    const et=e.type||e.event_type||'';
+    if(!et)continue;
     const p=typeof e.payload==='string'?JSON.parse(e.payload||'{}'):(e.payload||{});
-    switch(e.event_type){
+    switch(et){
       case 'game:start':case'game:started':
         _gs.status='playing';toast('¡Juego iniciado! 🎮','s');
         drawRoom(document.getElementById('root'),_gs.roomId);break;
@@ -508,17 +540,22 @@ function handleEvs(evs){
         paintGame(_gs.roomId);break;
       case 'game:bottle_spin':
         _gs.bottle=p.targetUsername;paintGame(_gs.roomId);break;
-      case 'game:roles_assigned':
+      case 'game:roles_assigned':{
         const role=(p.roles||{})[_me?.id];
-        if(role){const el=document.getElementById('my-role');if(el)el.innerHTML=`<div class="chip chip-purple" style="margin:0 auto">Tu rol: ${esc(role)} 🎭</div>`;}break;
+        if(role){const el=document.getElementById('my-role');if(el)el.innerHTML=`<div class="chip chip-purple" style="margin:0 auto">Tu rol: ${esc(role)} 🎭</div>`;}break;}
       case 'room:match_reveal':
         toast('💘 ¡Match con '+esc(p.targetUsername||'alguien')+'!','s',6000);break;
       case 'game:end':_gs.status='finished';break;
+      case 'game:score_update':
+        if(p.scores){for(const pl of _gs.players){if(p.scores[pl.userId])pl.score=p.scores[pl.userId];}paintPlayers();}break;
     }
   }
 }
 
-async function startGame(roomId){await ga(roomId,'game_start',{});}
+async function startGame(roomId){
+  try{await ga(roomId,'game_start',{});_gs.status='playing';drawRoom(document.getElementById('root'),roomId);}
+  catch(er){toast(er.message,'e');}
+}
 async function endGame(roomId){
   try{const d=await req('POST','/rooms/'+roomId+'/end');
     if((d.matches||[]).length)toast('💘 '+(d.matches.length)+' match(es) revelados!','s',5000);

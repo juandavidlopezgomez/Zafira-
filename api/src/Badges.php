@@ -45,25 +45,29 @@ class Badges {
     // ─── Otorga si no existe; idempotente ───────────────────────────────────
     public static function grant(PDO $db, string $userId, string $type): bool {
         if (!isset(self::CATALOG[$type])) return false;
-        $check = $db->prepare('SELECT 1 FROM badges WHERE user_id = ? AND badge_type = ? LIMIT 1');
-        $check->execute([$userId, $type]);
-        if ($check->fetch()) return false;
-
-        $id = self::uuid();
         try {
+            $check = $db->prepare('SELECT 1 FROM badges WHERE user_id = ? AND badge_type = ? LIMIT 1');
+            $check->execute([$userId, $type]);
+            if ($check->fetch()) return false;
+
+            $id = self::uuid();
             $db->prepare('INSERT INTO badges (id, user_id, badge_type) VALUES (?, ?, ?)')
                ->execute([$id, $userId, $type]);
             return true;
-        } catch (\PDOException $e) {
-            return false; // race condition con UNIQUE
+        } catch (\Throwable $e) {
+            return false;
         }
     }
 
     // ─── Lista de insignias del usuario ─────────────────────────────────────
     public static function userBadges(PDO $db, string $userId): array {
-        $stmt = $db->prepare('SELECT badge_type, earned_at FROM badges WHERE user_id = ? ORDER BY earned_at DESC');
-        $stmt->execute([$userId]);
-        $rows = $stmt->fetchAll();
+        try {
+            $stmt = $db->prepare('SELECT badge_type, earned_at FROM badges WHERE user_id = ? ORDER BY earned_at DESC');
+            $stmt->execute([$userId]);
+            $rows = $stmt->fetchAll();
+        } catch (\Throwable $e) {
+            return [];
+        }
         return array_map(static function (array $r): array {
             $meta = self::CATALOG[$r['badge_type']] ?? ['name' => $r['badge_type'], 'desc' => '', 'icon' => '🏅'];
             return [

@@ -12,8 +12,8 @@ class RoomsController {
 
         if (!$mode) Response::error('El campo mode es requerido');
 
-        $MODES = ['bottle','truth-dare','battle-1v1','liga','juicio','oscuro',
-                  'cartas','termometro','actores','ultimo-pie','todo-nada'];
+        $MODES = ['botella','verdad_reto','battle_1v1','liga','juicio','oscuro',
+                  'cartas','termometro','actores','ultimo_pie','todo_nada'];
         if (!in_array($mode, $MODES, true)) Response::error('Modo inválido');
 
         $db   = Database::get();

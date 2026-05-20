@@ -12,7 +12,7 @@ class GameController {
         $payload = Auth::requireUser();
         $userId  = $payload['sub'];
         $body    = json_decode(file_get_contents('php://input'), true) ?? [];
-        $event   = $body['event'] ?? '';
+        $event   = $body['event'] ?? $body['action'] ?? '';
         $data    = $body['payload'] ?? [];
         $db      = Database::get();
 
