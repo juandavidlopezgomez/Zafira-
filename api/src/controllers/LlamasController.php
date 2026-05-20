@@ -42,6 +42,49 @@ class LlamasController {
         ]);
     }
 
+    // POST /api/llamas/spend — gastar LLAMAS en una función de la app
+    public static function spend(): void {
+        $payload = Auth::requireUser();
+        $userId  = $payload['sub'];
+        $db      = Database::get();
+        $body    = json_decode(file_get_contents('php://input'), true) ?? [];
+        $feature = $body['feature'] ?? '';
+
+        $costs = [
+            'quien_te_voto'    => 20,
+            'genero_sobre'     => 50,
+            'termometro_exacto'=> 100,
+            'visitas_perfil'   => 150,
+            'modo_fantasma'    => 200,
+            'boost_perfil'     => 500,
+        ];
+
+        if (!isset($costs[$feature])) {
+            Response::error('Función no válida', 400);
+        }
+
+        $cost = $costs[$feature];
+        $bal  = Llamas::balance($db, $userId);
+        if ($bal < $cost) {
+            Response::error("LLAMAS insuficientes. Necesitas {$cost}, tienes {$bal}", 402);
+        }
+
+        Llamas::debit($db, $userId, $cost, $feature, [], null);
+
+        $result = match($feature) {
+            'modo_fantasma'  => ['active' => true, 'hours' => 24],
+            'boost_perfil'   => ['active' => true, 'hours' => 24],
+            default          => ['unlocked' => true],
+        };
+
+        Response::ok([
+            'feature' => $feature,
+            'cost'    => $cost,
+            'balance' => Llamas::balance($db, $userId),
+            'result'  => $result,
+        ]);
+    }
+
     // GET /api/llamas/daily — reclamar bono diario (idempotente)
     public static function claimDaily(): void {
         $payload = Auth::requireUser();

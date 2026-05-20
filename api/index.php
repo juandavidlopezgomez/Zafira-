@@ -200,6 +200,9 @@ match (true) {
     $method === 'POST' && $s0 === 'llamas' && $s1 === 'daily'
         => LlamasController::claimDaily(),
 
+    $method === 'POST' && $s0 === 'llamas' && $s1 === 'spend'
+        => LlamasController::spend(),
+
     // ── Challenges (pool + IA fallback) ──────────────────────────────────────
     $method === 'GET'  && $s0 === 'challenges' && $s1 === 'random'
         => ChallengesController::random(),

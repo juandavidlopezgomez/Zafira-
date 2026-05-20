@@ -16,13 +16,24 @@ class RoomsController {
                   'cartas','termometro','actores','ultimo_pie','todo_nada'];
         if (!in_array($mode, $MODES, true)) Response::error('Modo inválido');
 
+        $intensity  = max(1, min(4, (int)($body['intensity'] ?? 2)));
+        $context    = in_array($body['context'] ?? '', ['colegio','fiesta','corporativo','inclusivo'])
+                      ? $body['context'] : 'colegio';
+        $maxPlayers = max(2, min(12, (int)($body['maxPlayers'] ?? 8)));
+
         $db   = Database::get();
         $id   = self::uuid();
         $code = self::generateCode();
 
         $db->prepare(
-            'INSERT INTO rooms (id, code, host_id, mode, is_premium) VALUES (?, ?, ?, ?, ?)'
-        )->execute([$id, $code, $payload['sub'], $mode, $isPrem ? 1 : 0]);
+            'INSERT INTO rooms (id, code, host_id, mode, max_players, is_premium) VALUES (?, ?, ?, ?, ?, ?)'
+        )->execute([$id, $code, $payload['sub'], $mode, $maxPlayers, $isPrem ? 1 : 0]);
+
+        // Guardar intensidad y contexto en game_state para la IA
+        $db->prepare('INSERT INTO game_state (room_id, state_key, state_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE state_value = VALUES(state_value)')
+           ->execute([$id, 'intensity', (string)$intensity]);
+        $db->prepare('INSERT INTO game_state (room_id, state_key, state_value) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE state_value = VALUES(state_value)')
+           ->execute([$id, 'context', $context]);
 
         // El host entra automáticamente
         $stmt = $db->prepare('SELECT username FROM users WHERE id = ? LIMIT 1');
@@ -43,8 +54,10 @@ class RoomsController {
                 'hostId'     => $payload['sub'],
                 'mode'       => $mode,
                 'status'     => 'waiting',
-                'maxPlayers' => 12,
+                'maxPlayers' => $maxPlayers,
                 'isPremium'  => $isPrem,
+                'intensity'  => $intensity,
+                'context'    => $context,
             ],
             'qrUrl' => $qrUrl,
         ]);
