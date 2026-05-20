@@ -3,7 +3,15 @@ namespace BF;
 
 class Auth {
     public static function requireUser(): array {
-        $header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        // Hostinger/FastCGI puede enviar el header como REDIRECT_HTTP_AUTHORIZATION
+        $header = $_SERVER['HTTP_AUTHORIZATION']
+               ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+               ?? '';
+        // Último recurso: getallheaders() (requiere Apache mod_php o CGIPassAuth)
+        if (!$header && function_exists('getallheaders')) {
+            $h = getallheaders();
+            $header = $h['Authorization'] ?? $h['authorization'] ?? '';
+        }
         if (!str_starts_with($header, 'Bearer ')) {
             Response::error('No autenticado', 401);
         }
