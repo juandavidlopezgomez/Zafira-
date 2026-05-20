@@ -1,0 +1,2 @@
+# El config.php con credenciales reales NUNCA se sube a git
+# Edita api/config.php directamente en el servidor de Hostinger
